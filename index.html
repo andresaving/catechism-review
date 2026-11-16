@@ -107,8 +107,21 @@ h1 .v{color:var(--violet)}
 .game .name{font-family:var(--f-display);font-size:34px;line-height:.95;letter-spacing:.03em}
 .game .how{font-family:var(--f-body);font-size:15px;line-height:1.3;color:var(--ink-soft)}
 .game .tag{margin-top:auto;align-self:flex-start;font-size:11px;letter-spacing:.16em;font-weight:600;text-transform:uppercase;border:2px solid var(--ink);padding:2px 7px;background:var(--yellow)}
-.game .burst{position:absolute;right:-20px;top:-20px;width:58px;height:58px;opacity:.9}
-.game .name,.game .num{padding-right:30px}
+.ghead{display:flex;align-items:center;gap:8px;margin:-4px 0 0 -4px}
+.game .burst{width:64px;height:64px;flex:none;filter:drop-shadow(2px 2px 0 var(--ink))}
+.game:hover .burst{transform:rotate(-8deg) scale(1.06);transition:transform .18s var(--snap)}
+.gico{width:26px;height:26px;fill:none;stroke:var(--ink);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.gtitle{display:flex;align-items:center;gap:10px}
+.gtitle .gbadge{display:inline-grid;place-items:center;width:44px;height:44px;background:var(--yellow);border:var(--bd) solid var(--ink);box-shadow:var(--sh-sm);transform:rotate(-4deg)}
+.btn .gico,.hear .gico{width:1em;height:1em;vertical-align:-.12em;margin-right:6px;stroke:currentColor}
+.btn.mic{background:var(--magenta);color:var(--paper-hi)}
+.btn.mic.on{animation:micpulse 1s infinite}
+@keyframes micpulse{0%,100%{box-shadow:var(--sh-sm)}50%{box-shadow:0 0 0 6px rgba(212,77,138,.35),var(--sh-sm)}}
+@media (prefers-reduced-motion: reduce){.btn.mic.on{animation:none;outline:3px solid var(--yellow)}}
+.heard{font-family:var(--f-body);font-size:17px;line-height:1.35;color:var(--ink-soft);margin:10px 0 0;min-height:1.35em}
+.letters.checked{letter-spacing:.02em;word-spacing:.05em;font-weight:500}
+.rw{padding:0 1px} .rw.hit{background:var(--good-lt);box-shadow:inset 0 -2px 0 var(--good)} .rw.miss{background:var(--bad-lt);text-decoration:underline wavy var(--bad)}
+.meter{font-family:var(--f-display);font-size:22px;letter-spacing:.03em}
 .game.feature{grid-column:span 2;background:var(--violet);color:var(--paper-hi)}
 .game.feature .how,.game.feature .num{color:var(--violet-lt)}
 @media (max-width:460px){ .games{grid-template-columns:1fr 1fr;gap:14px} .game .name{font-size:27px} .game{min-height:132px;padding:12px} .game .how{font-size:14px} }
@@ -373,7 +386,7 @@ const GAMES = [
   {id:"build", name:"Build It",       how:"Snap the answer back together in order.",        tag:"Order"},
   {id:"blitz", name:"Lightning Round",how:"60 seconds. How many can you get?",              tag:"Timed"},
   {id:"swap",  name:"Spot the Swap",  how:"One word might be wrong. Find it!",              tag:"Detective"},
-  {id:"say",   name:"Say It",         how:"Just the first letters. Say it out loud.",       tag:"Recite"},
+  {id:"say",   name:"Say It",         how:"Just the first letters. Say it to the mic and it checks every word.", tag:"Recite"},
   {id:"keypath",name:"Key Path",      how:"Type the answer with only the keys you've learned. The keyboard shows which finger.", tag:"Fingers", lab:true},
   {id:"rain",  name:"Word Rain",      how:"The answer falls one word at a time. Type each word before it lands.", tag:"Speed", lab:true},
   {id:"first", name:"First Letters",  how:"Words are hidden. Type just the first letter of each one, from memory.", tag:"Memory", lab:true},
@@ -467,6 +480,31 @@ function others(item, k, prefer=pool()){
   return cand.slice(0,k);
 }
 
+
+/* ================= icons (hand-drawn, 24-unit grid) ================= */
+const ICON = {
+  battle:'<path d="M20 3h1v1L10 15l-1-1z" stroke-width="2.6"/><path d="M14.5 3.5 20.5 9.5"/><path d="M5.5 12.5l6 6"/><path d="M8 16l-4.5 4.5"/>',
+  typeit:'<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7.5 14h9"/>',
+  memtype:'<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/>',
+  drop:'<path d="M12 3v10M7.5 8.5 12 13l4.5-4.5"/><path d="M4 14v6h16v-6"/>',
+  fill:'<path d="M15.5 4.5l4 4L8 20H4v-4z"/><path d="M13 7l4 4"/>',
+  match:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+  build:'<rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/><rect x="8" y="3" width="8" height="8"/>',
+  blitz:'<path d="M13.5 2 4 14h7l-1.5 8L19 10h-7z" fill="#11100d"/>',
+  swap:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/><path d="M10.5 7.5v3.5M10.5 13.5h.01"/>',
+  say:'<rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/>',
+  keypath:'<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h8.5a3.5 3.5 0 0 0 0-7h-9a3.5 3.5 0 0 1 0-7H16"/>',
+  rain:'<path d="M7 15a4 4 0 1 1 .9-7.9A5 5 0 0 1 17.6 8 3.5 3.5 0 0 1 17 15z"/><path d="M8.5 18l-1 3M12.5 18l-1 3M16.5 18l-1 3"/>',
+  first:'<path d="M3.5 19 8.5 5l5 14M5.3 14h6.4"/><path d="M15.5 19h5"/>',
+  race:'<path d="M5 21.5V3"/><path d="M5 4h13l-3 4.5L18 13H5"/>',
+  hear:'<path d="M4 9.5h4L13 5v14l-5-4.5H4z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/>'
+};
+function icon(id, cls="gico"){
+  const s=document.createElementNS("http://www.w3.org/2000/svg","svg");
+  s.setAttribute("viewBox","0 0 24 24"); s.setAttribute("class",cls); s.setAttribute("aria-hidden","true");
+  s.innerHTML=ICON[id]||""; return s;
+}
+
 /* ================= sound + speech + confetti ================= */
 let AC=null;
 function tone(freqs, type="square", dur=.09){
@@ -482,7 +520,7 @@ const buzz = () => tone([150,120],"sawtooth",.12);
 const fanfare = () => tone([523,659,784,1047,1319],"square",.09);
 const canSpeak = "speechSynthesis" in window;
 function say(text){ try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.rate=.92; speechSynthesis.speak(u);}catch(e){} }
-function hearBtn(text){ return canSpeak ? $("button",{class:"hear",onclick:()=>say(text)},"▶ Hear it") : null; }
+function hearBtn(text){ return canSpeak ? $("button",{class:"hear",onclick:()=>say(text)},icon("hear"),"Hear it") : null; }
 
 const fx=document.getElementById("fx"), ctx=fx.getContext("2d");
 function confetti(){
@@ -495,12 +533,51 @@ function confetti(){
 }
 function shake(el){ el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake"); }
 
+
+/* ================= voice recite (speech recognition) ================= */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const canListen = !!SR;
+const SAME = {hath:"has",doth:"does",thee:"you",thou:"you",thy:"your",thine:"your",ye:"you",unto:"to",
+  forever:"forever",whatsoever:"whatsoever",shalt:"shall",wherein:"wherein",whereby:"whereby",
+  "1st":"first","2nd":"second","3rd":"third","4th":"fourth","5th":"fifth","6th":"sixth","7th":"seventh","8th":"eighth","9th":"ninth","10th":"tenth",
+  one:"1",two:"2",three:"3",four:"4",five:"5",six:"6",seven:"7",eight:"8",nine:"9",ten:"10"};
+const NUMW = {"1":"one","2":"two","3":"three","4":"four","5":"five","6":"six","7":"seven","8":"eight","9":"nine","10":"ten"};
+function vnorm(w){ w=w.toLowerCase().replace(/[’']/g,"").replace(/[^a-z0-9]/g,""); if(NUMW[w]) w=NUMW[w]; return SAME[w]&&!/^\d+$/.test(SAME[w])?SAME[w]:w; }
+function vwords(t){ return t.split(/[\s\-—–]+/).map(vnorm).filter(Boolean); }
+function vclose(a,b){ if(a===b) return true; if(a.length<5||b.length<5) return false;
+  if(Math.abs(a.length-b.length)>2) return false;
+  const d=Array.from({length:a.length+1},(_,i)=>[i]); for(let j=1;j<=b.length;j++) d[0][j]=j;
+  for(let i=1;i<=a.length;i++) for(let j=1;j<=b.length;j++) d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+  return d[a.length][b.length] <= (a.length>=9?2:1); }
+/* which answer words were said, in order (longest common subsequence, forgiving small mishearings) */
+function matchSaid(answerWords, saidWords){
+  const A=answerWords, B=saidWords, L=Array.from({length:A.length+1},()=>new Array(B.length+1).fill(0));
+  for(let i=A.length-1;i>=0;i--) for(let j=B.length-1;j>=0;j--) L[i][j]= vclose(A[i],B[j]) ? L[i+1][j+1]+1 : Math.max(L[i+1][j],L[i][j+1]);
+  const hit=new Array(A.length).fill(false); let i=0,j=0;
+  while(i<A.length&&j<B.length){ if(vclose(A[i],B[j])){hit[i]=true;i++;j++;} else if(L[i+1][j]>=L[i][j+1]) i++; else j++; }
+  return hit;
+}
+/* listen once; onPartial(text) while talking, onDone(text) at the end */
+function listen(onPartial, onDone){
+  const r=new SR(); r.lang="en-US"; r.continuous=true; r.interimResults=true; r.maxAlternatives=1;
+  let finalText="", live="", ended=false;
+  r.onresult=e=>{ live=""; finalText="";
+    for(let k=0;k<e.results.length;k++){ const t=e.results[k][0].transcript; if(e.results[k].isFinal) finalText+=t+" "; else live+=t+" "; }
+    onPartial((finalText+live).trim()); };
+  const end=()=>{ if(ended) return; ended=true; onDone((finalText+live).trim()); };
+  r.onend=end; r.onerror=ev=>{ if(ev.error==="not-allowed"||ev.error==="service-not-allowed") onDone(null,"blocked"); else end(); };
+  try{ speechSynthesis.cancel(); r.start(); }catch(e){ onDone(null,"failed"); }
+  return { stop:()=>{ try{r.stop();}catch(e){} } };
+}
+
 /* ================= home ================= */
 const app=document.getElementById("app");
-function burstSVG(color){ // jagged comic burst
-  const pts=[]; for(let i=0;i<22;i++){ const a=i/22*Math.PI*2, r=i%2?20:37; pts.push((40+Math.cos(a)*r).toFixed(1)+","+(40+Math.sin(a)*r).toFixed(1)); }
+function burstSVG(color, id){ // jagged comic burst with the game's icon in it
+  const pts=[]; for(let i=0;i<22;i++){ const a=i/22*Math.PI*2, r=i%2?28:38; pts.push((40+Math.cos(a)*r).toFixed(1)+","+(40+Math.sin(a)*r).toFixed(1)); }
   const s=document.createElementNS("http://www.w3.org/2000/svg","svg"); s.setAttribute("viewBox","0 0 80 80"); s.setAttribute("class","burst"); s.setAttribute("aria-hidden","true");
-  s.innerHTML=`<polygon points="${pts.join(" ")}" fill="${color}" stroke="#11100d" stroke-width="3"/>`; return s;
+  s.innerHTML=`<polygon points="${pts.join(" ")}" fill="${color}" stroke="#11100d" stroke-width="3"/>`+
+    (ICON[id]?`<g transform="translate(19.6 19.6) scale(1.7)" fill="none" stroke="#11100d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${ICON[id]}</g>`:"");
+  return s;
 }
 function home(){
   app.innerHTML="";
@@ -532,11 +609,11 @@ function home(){
       $("div",{class:"sec"},$("h2",{},"2 · Pick a game")),
       $("div",{class:"games"}, GAMES.filter(g=>!g.lab).map((g,i)=>{
         const b=$("button",{class:"game"+(g.feature?" feature":""),onclick:()=>play(g.id)},
-          $("span",{class:"num"},"Game "+(i+1)),
+          $("div",{class:"ghead"},burstSVG(g.feature||g.id==="blitz"?"#f2cf1d":["#f2cf1d","#d9d3ee","#d44d8a"][i%3], g.id),$("span",{class:"num"},"Game "+(i+1))),
           $("span",{class:"name"},g.name),
           $("span",{class:"how"},g.how),
           $("span",{class:"tag"},g.tag));
-        b.prepend(burstSVG(g.feature?"#f2cf1d":["#f2cf1d","#d9d3ee","#d44d8a"][i%3])); return b;
+        return b;
       }))
     ),
     $("section",{class:"stage"},
@@ -544,11 +621,11 @@ function home(){
       $("div",{class:"chips",role:"group","aria-label":"Keys learned"}, KEYLEVELS.map(k=>$("button",{class:"chip","aria-pressed":keyLv().id===k.id?"true":"false",onclick:()=>{S.keys=k.id; save(); home();}},k.label,$("small",{},k.hint)))),
       $("div",{class:"games"}, GAMES.filter(g=>g.lab).map((g,i)=>{
         const b=$("button",{class:"game lab",onclick:()=>play(g.id)},
-          $("span",{class:"num"},"Lab "+(i+1)),
+          $("div",{class:"ghead"},burstSVG(["#f2cf1d","#d44d8a"][i%2], g.id),$("span",{class:"num"},"Lab "+(i+1))),
           $("span",{class:"name"},g.name),
           $("span",{class:"how"},g.how),
           $("span",{class:"tag"},g.tag));
-        b.prepend(burstSVG(["#f2cf1d","#d44d8a"][i%2])); return b;
+        return b;
       }))
     ),
     $("section",{class:"stage"},
@@ -599,7 +676,7 @@ function play(id){
   const g=GAMES.find(x=>x.id===id);
   G={id, name:g.name, right:0, total:0, results:[]};
   app.innerHTML="";
-  G.bar=$("div",{class:"bar"},$("button",{class:"back",onclick:()=>{G.stop&&G.stop(); G=null; home(); scrollTo(0,0);}},"← Games"),$("h2",{class:"gtitle"},g.name));
+  G.bar=$("div",{class:"bar"},$("button",{class:"back",onclick:()=>{G.stop&&G.stop(); G=null; home(); scrollTo(0,0);}},"← Games"),$("h2",{class:"gtitle"},$("span",{class:"gbadge"},icon(id)),g.name));
   G.stage=$("div",{class:"stage"});
   app.append(G.bar,G.stage);
   scrollTo(0,0);
@@ -1252,23 +1329,68 @@ function race(pc){
 
 /* ---------- 7. Say It ---------- */
 function SayIt(){
-  const items=pick(6); pips(6); let idx=0;
+  const items=pick(6); pips(6); let idx=0, mic=null;
+  G.stop=()=>{ mic&&mic.stop(); };
   function round(){
     if(idx>=items.length) return finish();
     setPip(idx,"now");
     const item=items[idx];
     const letters=item.a.split(" ").map(w=>{ const m=w.match(/^([^A-Za-z]*)([A-Za-z])[A-Za-z'’-]*([^A-Za-z]*)$/); return m?m[1]+m[2]+m[3]:w; }).join(" ");
-    const box=$("div",{class:"apanel"},$("span",{class:"alabel"},"Say the whole answer out loud"),$("p",{class:"letters"},letters));
+    const lettersEl=$("p",{class:"letters"},letters);
+    const heard=$("p",{class:"heard","aria-live":"polite"},"");
+    const box=$("div",{class:"apanel"},$("span",{class:"alabel"},canListen?"Tap the mic and say the whole answer":"Say the whole answer out loud"),lettersEl,heard);
     const act=$("div",{class:"actions"});
     const msg=$("div",{class:"msg"},"");
-    act.append(nextBtn("Show the answer",()=>{
-      box.append($("p",{class:"atext pop",style:"margin-top:12px"},item.a), hearBtn(item.q+" "+item.a)||"");
-      msg.textContent="How did you do?"; msg.className="msg";
+    const ansWords=item.a.split(/\s+/);
+    const ansNorm=ansWords.map(w=>vwords(w).join(""));
+    let shown=false;
+
+    function selfGrade(){
       act.replaceChildren(
         $("button",{class:"btn",onclick:()=>grade(true)},"Said it right!"),
-        $("button",{class:"btn alt",onclick:()=>grade(false)},"Not yet"));
-    }));
-    function grade(ok){ record(item,ok); setPip(idx,ok?"ok":"no"); idx++; round(); }
+        $("button",{class:"btn alt",onclick:()=>grade(false)},"Not yet"),
+        canListen?micBtn("Try again"):null);
+    }
+    function showAnswer(){
+      if(shown) return; shown=true;
+      box.append($("p",{class:"atext pop",style:"margin-top:12px"},item.a), hearBtn(item.q+" "+item.a)||"");
+    }
+    function micBtn(label){
+      return $("button",{class:"btn mic",onclick:e=>startMic(e.currentTarget)},icon("say"),label);
+    }
+    function startMic(btn){
+      if(mic){ mic.stop(); return; }
+      btn.classList.add("on"); btn.lastChild.textContent="Listening… tap to stop";
+      msg.textContent=""; msg.className="msg"; heard.textContent="…";
+      mic=listen(t=>{ heard.textContent=t||"…"; },
+        (text,err)=>{ mic=null; btn.classList.remove("on");
+          if(err){ heard.textContent = err==="blocked" ? "The microphone is blocked. Allow it in the browser settings, or just say it out loud." : "The microphone didn't start."; selfGrade(); return; }
+          check(text||"");
+        });
+    }
+    function check(text){
+      const said=vwords(text);
+      const keep=ansNorm.map((w,i)=>w?i:-1).filter(i=>i>=0);
+      const hit=matchSaid(keep.map(i=>ansNorm[i]), said);
+      const got=hit.filter(Boolean).length, pct=keep.length?got/keep.length:0;
+      const hitAt=new Set(keep.filter((_,k)=>hit[k]));
+      const lw=letters.split(" ");
+      lettersEl.classList.add("checked");
+      lettersEl.replaceChildren(...ansWords.flatMap((w,i)=>[ hitAt.has(i)?$("span",{class:"rw hit"},w):$("span",{class:"rw miss"},lw[i]||w), " " ]));
+      heard.textContent = text ? "Heard: “"+text+"”" : "I didn't catch anything.";
+      const p=Math.round(pct*100);
+      if(pct>=.85){ msg.textContent=(p>=97?"WORD PERFECT! ":"GOT IT! ")+p+"%"; msg.className="msg ok"; showAnswer(); grade(true,true); }
+      else { msg.textContent=p+"% · red letters are the words you missed"; msg.className="msg no"; selfGrade(); }
+    }
+    function grade(ok, auto){
+      mic&&mic.stop();
+      if(auto){ record(item,true); setPip(idx,"ok"); idx++; act.replaceChildren(nextBtn(idx>=items.length?"Finish":"Next question",round)); return; }
+      record(item,ok); setPip(idx,ok?"ok":"no"); idx++; round();
+    }
+    act.append(
+      canListen?micBtn("Say it"):null,
+      (canListen?$("button",{class:"btn alt",onclick:()=>{ showAnswer(); msg.textContent="How did you do?"; msg.className="msg"; selfGrade(); }},"Show the answer")
+                :nextBtn("Show the answer",()=>{ showAnswer(); msg.textContent="How did you do?"; msg.className="msg"; selfGrade(); })));
     G.stage.replaceChildren(qPanel(item), box, msg, act);
   }
   round();

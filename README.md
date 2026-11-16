@@ -2,7 +2,7 @@
 
 Free games for kids to learn the **Westminster Shorter Catechism** (all 107
 questions): Boss Battle, typing practice, Word Drop, Fill It In, Match Up,
-Build It, Lightning Round, Spot the Swap and Say It. A slider limits every game
+Build It, Lightning Round, Spot the Swap and Say It (say the answer to the mic and it checks every word). A slider limits every game
 to the questions a child has studied so far.
 
 No accounts, no ads, no tracking. Progress saves on the device. Works offline
