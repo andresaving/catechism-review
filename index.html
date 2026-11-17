@@ -624,6 +624,8 @@ function compileSong(sg){
   return {mel,bass,total};
 }
 const MU={on:false,idx:0,loop:0,timer:null,base:0,cur:null,qi:0,q:null,gain:null,pulse:null,noise:null};
+try{ if(navigator.audioSession) navigator.audioSession.type="playback"; }catch(e){}
+function acWake(){ try{ if(AC && AC.state!=="running") AC.resume(); }catch(e){} }
 function muInit(){ AC=AC||new (window.AudioContext||window.webkitAudioContext)();
   if(!MU.gain){ MU.gain=AC.createGain(); MU.gain.gain.value=.5; MU.gain.connect(AC.destination);
     const N=32, re=new Float32Array(N), im=new Float32Array(N), d=.25; for(let n=1;n<N;n++){ re[n]=Math.sin(2*Math.PI*n*d)/(Math.PI*n); im[n]=(1-Math.cos(2*Math.PI*n*d))/(Math.PI*n); }
@@ -652,7 +654,7 @@ function muTick(){
     MU.qi++;
   }
 }
-function musicStart(){ if(MU.on||S.mute||S.music===false||document.hidden) return;
+function musicStart(){ if(MU.on){ acWake(); return; } if(S.mute||S.music===false||document.hidden) return;
   try{ muInit(); if(AC.state==="suspended") AC.resume(); MU.idx=(S.song||0)%SONGS.length; MU.loop=0; muLoad(); MU.base=AC.currentTime+.15;
     MU.gain.gain.cancelScheduledValues(AC.currentTime); MU.gain.gain.setValueAtTime(.5,AC.currentTime);
     MU.on=true; MU.timer=setInterval(muTick,90); muTick(); }catch(e){} }
@@ -660,7 +662,7 @@ function musicStop(){ if(!MU.on) return; MU.on=false; clearInterval(MU.timer);
   try{ const t=AC.currentTime; MU.gain.gain.setValueAtTime(MU.gain.gain.value,t); MU.gain.gain.linearRampToValueAtTime(0,t+.08);
     const old=MU.gain; setTimeout(()=>old.disconnect(),200); MU.gain=AC.createGain(); MU.gain.gain.value=.5; MU.gain.connect(AC.destination); }catch(e){} }
 function musicSkip(){ MU.idx=((S.song||0)+1)%SONGS.length; S.song=MU.idx; save(); musicStop(); musicStart(); const el=document.getElementById("songnow"); if(el) el.textContent="♪ "+SONGS[MU.idx].name; }
-document.addEventListener("pointerdown",()=>musicStart(),{capture:true});
+["pointerdown","touchend","click","keydown"].forEach(ev=>document.addEventListener(ev,()=>{ acWake(); musicStart(); },{capture:true,passive:true}));
 document.addEventListener("visibilitychange",()=>{ if(document.hidden) musicStop(); else musicStart(); });
 const canSpeak = "speechSynthesis" in window;
 function say(text){ try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.rate=.92; speechSynthesis.speak(u);}catch(e){} }
