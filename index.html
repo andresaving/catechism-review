@@ -281,6 +281,7 @@ h1 .v{color:var(--violet)}
 .runno{font-family:var(--f-display);font-size:26px;letter-spacing:.03em}
 .soup{display:flex;flex-wrap:wrap;gap:8px}
 .soup .piece{font-size:18px;padding:5px 9px 3px}
+.soup .piece.spent{opacity:.1;box-shadow:none;transition:opacity .2s}
 .built .piece.w{padding:3px 7px 1px}
 .numopts{display:flex;gap:10px;flex-wrap:wrap}
 .numopts .opt{min-width:72px;justify-content:center;font-family:var(--f-display);font-size:26px}
@@ -1397,7 +1398,7 @@ function Gauntlet(){
         b.addEventListener("click",()=>{
           if(done) return;
           if(c.real && norm(c.w)===norm(words[next]) ){
-            b.remove(); built.append($("span",{class:"piece w pop"},words[next])); next++; tone([480+Math.min(next,30)*18],"square",.04);
+            b.disabled=true; b.classList.add("spent"); built.append($("span",{class:"piece w pop"},words[next])); next++; tone([480+Math.min(next,30)*18],"square",.04);
             msg.className="msg"; msg.textContent="";
             if(next===words.length){ done=true; bump(item.n,slips===0); ding();
               if(n>best && n>(recs[name]||0)){ recs[name]=n; save(); }
@@ -1406,7 +1407,7 @@ function Gauntlet(){
           } else {
             slips++; buzz(); shake(b); slipEl.children[slips-1].classList.add("gone");
             msg.className="msg no"; msg.textContent = c.real ? "Not that one yet." : "That word isn't in this answer!";
-            if(!c.real){ b.disabled=true; b.style.opacity=".3"; }
+            if(!c.real){ b.disabled=true; b.classList.add("spent"); }
             if(slips>=3){ done=true; bump(item.n,false);
               built.replaceChildren($("p",{class:"atext"},item.a)); soup.remove();
               setTimeout(()=>over(false), 300); }
