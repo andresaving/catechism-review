@@ -46,7 +46,7 @@ body{
   background:
     radial-gradient(130% 70% at 50% -5%, var(--paper) 0%, var(--field) 62%, var(--steel) 140%) fixed,
     var(--field);
-  min-height:100%;
+  min-height:100vh;
   padding-left:max(16px, env(safe-area-inset-left, 0px));
   padding-right:max(16px, env(safe-area-inset-right, 0px));
   padding-block:18px 48px;
@@ -378,6 +378,45 @@ h1 .v{color:var(--violet)}
 .mist{font-family:var(--f-display);font-size:clamp(40px,10vw,64px);color:var(--steel-dk);letter-spacing:.04em;text-shadow:3px 3px 0 var(--paper-hi)}
 .foot{text-align:center;font-size:11px;letter-spacing:.32em;font-weight:600;color:var(--ink-soft)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ---------- home v2: one calm screen ---------- */
+.top2{display:flex;align-items:center;gap:18px;flex-wrap:wrap;position:relative}
+.top2 h1{font-family:var(--f-display);font-weight:400;font-size:40px;letter-spacing:.02em;line-height:1;margin:0}
+.top2 h1 .v{color:var(--violet)}
+.stats2{display:flex;gap:14px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+.stats2 b{color:var(--violet);font-size:16px;font-variant-numeric:tabular-nums}
+.topr{margin-left:auto;display:flex;gap:10px;align-items:center;position:relative}
+.pill{font-weight:600;font-size:14px;letter-spacing:.06em;background:var(--paper-hi);border:var(--bd) solid var(--ink);padding:8px 14px;box-shadow:var(--sh-sm)}
+.sndbtn{width:46px;height:46px;border:var(--bd) solid var(--ink);background:var(--paper-hi);display:grid;place-items:center;box-shadow:var(--sh-sm);padding:0}
+.sndbtn.off{opacity:.55}
+.sico{width:24px;height:24px}
+.sndmenu{position:absolute;right:0;top:56px;z-index:30;background:var(--paper-hi);border:var(--bd) solid var(--ink);box-shadow:var(--sh);padding:12px;display:flex;flex-direction:column;gap:8px;align-items:stretch;min-width:190px}
+.sndmenu .mute{margin:0}
+.tabs2{display:flex;gap:6px;border-bottom:var(--bd) solid var(--ink)}
+.tab2{font-family:var(--f-display);font-size:24px;letter-spacing:.04em;padding:6px 22px 2px;border:var(--bd) solid var(--ink);border-bottom:0;background:var(--paper);margin-bottom:calc(-1 * var(--bd));color:var(--steel-dk)}
+.tab2[aria-selected="true"]{background:var(--paper-hi);color:var(--ink)}
+.row2{display:grid;grid-template-columns:1fr 1.4fr;gap:16px}
+.cont,.feat2{text-align:left;border:var(--bd) solid var(--ink);box-shadow:5px 5px 0 var(--ink);padding:16px 20px;display:flex;align-items:center;gap:14px}
+.cont{background:var(--yellow)}
+.feat2{background:var(--violet);color:var(--paper-hi)}
+.cont small,.feat2 small{font-size:12px;letter-spacing:.14em;text-transform:uppercase;display:block}
+.cont b,.feat2 b{font-family:var(--f-display);font-weight:400;font-size:30px;letter-spacing:.03em;line-height:1;display:block}
+.playtri{width:40px;height:44px;flex:none;background:var(--ink);clip-path:polygon(15% 10%,90% 50%,15% 90%)}
+.fico{width:54px;height:54px;flex:none;background:var(--yellow);border:var(--bd) solid var(--ink);display:grid;place-items:center;color:var(--ink)}
+.fico svg{width:28px;height:28px}
+.fhow{font-family:var(--f-body);font-size:15px;line-height:1.25;opacity:.9;display:block}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.tile2{text-align:left;background:var(--paper-hi);border:var(--bd) solid var(--ink);box-shadow:var(--sh-sm);padding:12px 14px;display:flex;align-items:center;gap:12px;min-height:76px}
+.tile2:active,.cont:active,.feat2:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.tico{width:44px;height:44px;flex:none;border-radius:50%;background:var(--violet-lt);display:grid;place-items:center}
+.tico svg{width:26px;height:26px}
+.tname{font-family:var(--f-display);font-size:24px;letter-spacing:.03em;line-height:.95}
+.tname .two{font-family:var(--f-body);font-style:normal;font-size:12px;letter-spacing:0;display:block;color:var(--magenta);line-height:1.1}
+.tabnote{font-family:var(--f-body);font-size:16px;margin:0}
+.sheet2{background:var(--paper-hi);border:var(--bd) solid var(--ink);box-shadow:var(--sh);padding:20px}
+.sheeth{font-family:var(--f-display);font-weight:400;font-size:28px;letter-spacing:.03em;margin:0}
+.ghow{font-family:var(--f-body);font-size:15px;margin:-6px 0 0;color:var(--ink-soft)}
+@media (max-width:640px){.row2{grid-template-columns:1fr}.top2 h1{font-size:32px}.tab2{font-size:19px;padding:6px 12px 2px}}
 </style>
 </head>
 <body>
@@ -648,60 +687,49 @@ function burstSVG(color, id){ // jagged comic burst with the game's icon in it
     (ICON[id]?`<g transform="translate(19.6 19.6) scale(1.7)" fill="none" stroke="#11100d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${ICON[id]}</g>`:"");
   return s;
 }
+const UI={range:false,snd:false};
+function rangeLabel(){ const c=CHAPTERS.find(x=>x.id===S.chapter && (x.id==="weak"||x.from<=S.max)); return "Q1–"+S.max+" · "+(c?c.label:"Everything"); }
+function tile(g){ return $("button",{class:"tile2",onclick:()=>play(g.id)},
+  $("span",{class:"tico"},icon(g.id)),
+  $("span",{class:"tname"}, g.tag==="2 players"?$("i",{class:"two"},"2 players"):null, g.name)); }
 function home(){
   app.innerHTML="";
   const open=WSC.filter(inRange), mastered=open.filter(it=>lvl(it.n)===5).length;
-  app.append(
-    $("header",{class:"mast"},
-      $("div",{class:"kicker"},"Westminster Shorter Catechism · Q. 1–"+S.max),
-      $("h1",{},"Catechism ", $("span",{class:"v"},"Review")),
-      $("p",{class:"sub"},"You've learned them. Now let's make them stick. Set how far you've studied, pick a game, and go."),
-      $("div",{class:"stats"},
-        $("div",{class:"stat"},$("b",{},String(S.stars)),$("span",{},"stars")),
-        $("div",{class:"stat"},$("b",{},mastered+"/"+S.max),$("span",{},"mastered")),
-        $("div",{class:"stat"},$("b",{},String(S.streak)),$("span",{},S.streak===1?"day streak":"day streak")),
-        $("div",{class:"sndbox"},
-          $("button",{class:"mute",id:"mute","aria-pressed":S.mute?"true":"false",onclick:()=>{S.mute=!S.mute; save(); if(S.mute) musicStop(); else musicStart(); home();}}, S.mute?"Sound off":"Sound on"),
-          $("button",{class:"mute",id:"musicbtn","aria-pressed":S.music===false?"false":"true",onclick:()=>{S.music=S.music===false; save(); if(S.music) musicStart(); else musicStop(); home();}}, S.music===false?"Music off":"Music on"),
-          (S.music!==false && !S.mute) ? $("button",{class:"songnow",id:"songnow",title:"Next song",onclick:musicSkip},"♪ "+SONGS[(S.song||0)%SONGS.length].name) : null)
-      )
-    ),
-    $("section",{class:"stage"},
-      $("div",{class:"sec"},$("h2",{},"1 · How far have you studied?")),
-      maxSlider(),
-      $("div",{class:"chips",role:"group","aria-label":"Chapter"}, CHAPTERS.filter(c=>c.id==="weak"||c.from<=S.max).map(c=>{
-        const sp=c.id==="weak"?null:chapterSpan(c);
-        const count = c.id==="weak" ? open.filter(it=>lvl(it.n)<3).length : 0;
-        const on = S.chapter===c.id || (c.id==="all" && !CHAPTERS.some(x=>x.id===S.chapter && (x.id==="weak"||x.from<=S.max)));
-        return $("button",{class:"chip"+(c.id==="weak"?" weak":""),"aria-pressed":on?"true":"false",
-          onclick:()=>{S.chapter=c.id; save(); home();}}, c.label, $("small",{}, c.id==="weak"?`(${count})`:(sp.from===sp.to?`Q${sp.from}`:`Q${sp.from}–${sp.to}`)));
-      }))
-    ),
-    $("section",{class:"stage"},
-      $("div",{class:"sec"},$("h2",{},"2 · Pick a game")),
-      $("div",{class:"games"}, GAMES.filter(g=>!g.lab).map((g,i)=>{
-        const b=$("button",{class:"game"+(g.feature?" feature":""),onclick:()=>play(g.id)},
-          $("div",{class:"ghead"},burstSVG(g.feature||g.id==="blitz"?"#f2cf1d":["#f2cf1d","#d9d3ee","#d44d8a"][i%3], g.id),$("span",{class:"num"},"Game "+(i+1))),
-          $("span",{class:"name"},g.name),
-          $("span",{class:"how"},g.how),
-          $("span",{class:"tag"},g.tag));
-        return b;
-      }))
-    ),
-    $("section",{class:"stage"},
-      $("div",{class:"sec"},$("h2",{},"3 · Keyboard Lab"),$("p",{},"Typing Land skills, catechism words. Which keys have you learned?")),
+  const tab=S.tab||"play";
+  const top=$("header",{class:"top2"},
+    $("h1",{},"Catechism ",$("span",{class:"v"},"Review")),
+    $("div",{class:"stats2"},
+      $("span",{},$("b",{},String(S.stars))," stars"),
+      $("span",{},$("b",{},mastered+"/"+S.max)," mastered"),
+      $("span",{},$("b",{},String(S.streak))," day streak")),
+    $("div",{class:"topr"},
+      $("button",{class:"pill",onclick:()=>{UI.range=true; home();}},rangeLabel()," ▾"),
+      $("button",{class:"sndbtn"+(S.mute?" off":""),"aria-label":"Sound and music",onclick:()=>{UI.snd=!UI.snd; home();}},icon("hear","sico")),
+      UI.snd ? $("div",{class:"sndmenu"},
+        $("button",{class:"mute","aria-pressed":S.mute?"true":"false",onclick:()=>{S.mute=!S.mute; save(); if(S.mute) musicStop(); else musicStart(); home();}}, S.mute?"Sound off":"Sound on"),
+        $("button",{class:"mute","aria-pressed":S.music===false?"false":"true",onclick:()=>{S.music=S.music===false; save(); if(S.music) musicStart(); else musicStop(); home();}}, S.music===false?"Music off":"Music on"),
+        (S.music!==false && !S.mute) ? $("button",{class:"songnow",id:"songnow",title:"Next song",onclick:musicSkip},"♪ "+SONGS[(S.song||0)%SONGS.length].name) : null) : null));
+  const tabs=$("nav",{class:"tabs2",role:"tablist"}, [["play","Play"],["lab","Typing Lab"],["map","My Map"]].map(([id,l])=>
+    $("button",{class:"tab2",role:"tab","aria-selected":tab===id?"true":"false",onclick:()=>{S.tab=id; save(); UI.snd=false; home();}},l)));
+  let body;
+  if(tab==="play"){
+    const last=GAMES.find(g=>g.id===S.lastGame && !g.lab) || GAMES.find(g=>g.id==="battle");
+    const feat=GAMES.find(g=>g.id==="gauntlet");
+    const recs=S.gauntlet||{}, bestName=Object.keys(recs).sort((x,y)=>recs[y]-recs[x])[0];
+    body=$("section",{class:"stage"},
+      $("div",{class:"row2"},
+        $("button",{class:"cont",onclick:()=>play(last.id)},$("span",{class:"playtri"}),$("span",{},$("small",{},S.lastGame?"Continue":"Start here"),$("b",{},last.name))),
+        $("button",{class:"feat2",onclick:()=>play(feat.id)},$("span",{class:"fico"},icon(feat.id)),
+          $("span",{},$("small",{},"Challenge"+(bestName&&recs[bestName]?" · "+bestName+"'s best Q1–"+recs[bestName]:"")),$("b",{},feat.name),$("span",{class:"fhow"},"Q1 onward, in order. Three slips and you're out.")))),
+      $("div",{class:"grid2"}, GAMES.filter(g=>!g.lab && g.id!=="gauntlet").map(tile)));
+  } else if(tab==="lab"){
+    body=$("section",{class:"stage"},
+      $("p",{class:"tabnote"},"Typing Land skills, catechism words. Which keys have you learned?"),
       $("div",{class:"chips",role:"group","aria-label":"Keys learned"}, KEYLEVELS.map(k=>$("button",{class:"chip","aria-pressed":keyLv().id===k.id?"true":"false",onclick:()=>{S.keys=k.id; save(); home();}},k.label,$("small",{},k.hint)))),
-      $("div",{class:"games"}, GAMES.filter(g=>g.lab).map((g,i)=>{
-        const b=$("button",{class:"game lab",onclick:()=>play(g.id)},
-          $("div",{class:"ghead"},burstSVG(["#f2cf1d","#d44d8a"][i%2], g.id),$("span",{class:"num"},"Lab "+(i+1))),
-          $("span",{class:"name"},g.name),
-          $("span",{class:"how"},g.how),
-          $("span",{class:"tag"},g.tag));
-        return b;
-      }))
-    ),
-    $("section",{class:"stage"},
-      $("div",{class:"sec"},$("h2",{},"Your map"),$("p",{},"Every right answer powers a question up. Tap one to study it.")),
+      $("div",{class:"grid2"}, GAMES.filter(g=>g.lab).map(tile)));
+  } else {
+    body=$("section",{class:"stage"},
+      $("p",{class:"tabnote"},"Every right answer powers a question up. Tap one to study it."),
       $("div",{class:"mapwrap"},
         $("div",{class:"map"}, WSC.map(it=>$("button",{class:"tile"+(inRange(it)?"":" off"),"data-l":lvl(it.n),"aria-label":`Question ${it.n}, level ${lvl(it.n)} of 5`+(inRange(it)?"":", not studied yet"),onclick:()=>study(it)}, String(it.n)))),
         $("div",{class:"legend"},
@@ -709,11 +737,24 @@ function home(){
           $("span",{},$("i",{style:"background:#b8addf"}),"Learning"),
           $("span",{},$("i",{style:"background:var(--violet)"}),"Strong"),
           $("span",{},$("i",{style:"background:var(--yellow)"}),"Mastered"),
-          S.max<107?$("span",{},$("i",{style:"background:transparent;border-style:dashed"}),"Not studied yet"):null)
-      )
-    ),
-    $("div",{class:"foot"},"SOLI DEO GLORIA")
-  );
+          S.max<107?$("span",{},$("i",{style:"background:transparent;border-style:dashed"}),"Not studied yet"):null)));
+  }
+  app.append(top, tabs, body, $("div",{class:"foot"},"SOLI DEO GLORIA"));
+  if(UI.range){
+    const m=$("div",{class:"modal",onclick:e=>{if(e.target===m){UI.range=false; home();}}},
+      $("div",{class:"inner sheet2"},
+        $("h2",{class:"sheeth"},"How far have you studied?"),
+        maxSlider(),
+        $("div",{class:"chips",role:"group","aria-label":"Chapter"}, CHAPTERS.filter(c=>c.id==="weak"||c.from<=S.max).map(c=>{
+          const sp=c.id==="weak"?null:chapterSpan(c);
+          const count = c.id==="weak" ? open.filter(it=>lvl(it.n)<3).length : 0;
+          const on = S.chapter===c.id || (c.id==="all" && !CHAPTERS.some(x=>x.id===S.chapter && (x.id==="weak"||x.from<=S.max)));
+          return $("button",{class:"chip"+(c.id==="weak"?" weak":""),"aria-pressed":on?"true":"false",
+            onclick:()=>{S.chapter=c.id; save(); home();}}, c.label, $("small",{}, c.id==="weak"?`(${count})`:(sp.from===sp.to?`Q${sp.from}`:`Q${sp.from}–${sp.to}`)));
+        })),
+        $("div",{class:"actions"},$("button",{class:"btn vi",onclick:()=>{UI.range=false; home();}},"Done"))));
+    app.append(m);
+  }
 }
 function maxSlider(){
   const out=$("output",{class:"maxval",for:"maxq"},String(S.max));
@@ -747,10 +788,11 @@ let G=null;
 function play(id){
   const g=GAMES.find(x=>x.id===id);
   G={id, name:g.name, right:0, total:0, results:[]};
+  if(!g.lab){ S.lastGame=id; save(); } UI.snd=false; UI.range=false;
   app.innerHTML="";
   G.bar=$("div",{class:"bar"},$("button",{class:"back",onclick:()=>{G.stop&&G.stop(); G=null; home(); scrollTo(0,0);}},"← Games"),$("h2",{class:"gtitle"},$("span",{class:"gbadge"},icon(id)),g.name));
   G.stage=$("div",{class:"stage"});
-  app.append(G.bar,G.stage);
+  app.append(G.bar,$("p",{class:"ghow"},g.how),G.stage);
   scrollTo(0,0);
   ({battle:Battle,typeit:TypeItOut,memtype:MemoryType,drop:WordDrop,fill:FillIn,match:MatchUp,build:BuildIt,blitz:Blitz,swap:Swap,say:SayIt,gauntlet:Gauntlet,duel:Duel,flip:FlipIt,keypath:KeyPath,rain:WordRain,first:FirstLetters,race:PaceRace})[id]();
 }
