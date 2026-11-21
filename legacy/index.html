@@ -394,6 +394,9 @@ h1 .v{color:var(--violet)}
 .sico{width:24px;height:24px}
 .sndmenu{position:absolute;right:0;top:56px;z-index:30;background:var(--paper-hi);border:var(--bd) solid var(--ink);box-shadow:var(--sh);padding:12px;display:flex;flex-direction:column;gap:8px;align-items:stretch;min-width:190px}
 .sndmenu .mute{margin:0}
+.vrow{display:flex;flex-direction:column;align-items:stretch;font-size:11px;letter-spacing:.18em;font-weight:600;text-transform:uppercase;margin-top:4px}
+.vrow span{margin-bottom:4px}
+.vrow input[type=range]{width:100%;height:32px;margin:0;accent-color:var(--violet);-webkit-appearance:auto}
 .tabs2{display:flex;gap:6px;border-bottom:var(--bd) solid var(--ink)}
 .tab2{font-family:var(--f-display);font-size:24px;letter-spacing:.04em;padding:6px 22px 2px;border:var(--bd) solid var(--ink);border-bottom:0;background:var(--paper);margin-bottom:calc(-1 * var(--bd));color:var(--steel-dk)}
 .tab2[aria-selected="true"]{background:var(--paper-hi);color:var(--ink)}
@@ -680,7 +683,12 @@ function icon(id, cls = "gico") {
   return s;
 }
 let AC = null;
-let SFX = null;
+let SFX = null, SFXV = null;
+const vol = (k, d) => {
+  const v = S[k];
+  return typeof v === "number" ? Math.max(0, Math.min(1, v)) : d;
+};
+const curve = (v) => v * v;
 function tone(freqs, type = "sine", dur = 0.09) {
   if (S.mute) return;
   try {
@@ -690,7 +698,10 @@ function tone(freqs, type = "sine", dur = 0.09) {
       SFX.type = "lowpass";
       SFX.frequency.value = 1800;
       SFX.Q.value = 0.5;
-      SFX.connect(AC.destination);
+      SFXV = AC.createGain();
+      SFXV.gain.value = curve(vol("svol", 0.85)) * 1.4;
+      SFX.connect(SFXV);
+      SFXV.connect(AC.destination);
     }
     const w = type === "sine" ? "sine" : "triangle";
     freqs.forEach((f, i) => {
@@ -827,7 +838,10 @@ function muInit() {
     MU.lp.type = "lowpass";
     MU.lp.frequency.value = 1400;
     MU.lp.Q.value = 0.7;
-    MU.lp.connect(AC.destination);
+    MU.vol = AC.createGain();
+    MU.vol.gain.value = curve(vol("mvol", 0.85)) * 1.4;
+    MU.lp.connect(MU.vol);
+    MU.vol.connect(AC.destination);
     MU.lfo = AC.createOscillator();
     MU.lfo.frequency.value = 0.35;
     MU.wob = AC.createGain();
@@ -962,9 +976,31 @@ function musicStop() {
     setTimeout(() => old.disconnect(), 200);
     MU.gain = AC.createGain();
     MU.gain.gain.value = 0.5;
-    MU.gain.connect(AC.destination);
+    MU.gain.connect(MU.lp);
   } catch (e) {
   }
+}
+function setVol(k, v) {
+  S[k] = v;
+  save();
+  try {
+    const g = k === "mvol" ? MU.vol && MU.vol.gain : SFXV && SFXV.gain, x = curve(v) * 1.4;
+    if (g) {
+      g.cancelScheduledValues(AC.currentTime);
+      g.setTargetAtTime(x, AC.currentTime, 0.03);
+    }
+  } catch (e) {
+  }
+  if (k === "mvol") {
+    if (v === 0) musicStop();
+    else musicStart();
+  }
+}
+function volRow(label, k, d, test) {
+  const r = $("input", { type: "range", min: "0", max: "100", step: "1", value: String(Math.round(vol(k, d) * 100)), "aria-label": label + " volume" });
+  r.addEventListener("input", () => setVol(k, r.value / 100));
+  if (test) r.addEventListener("change", test);
+  return $("label", { class: "vrow" }, $("span", {}, label), r);
 }
 function musicSkip() {
   MU.idx = ((S.song || 0) + 1) % SONGS.length;
@@ -1098,6 +1134,8 @@ function home() {
           else musicStop();
           home();
         } }, S.music === false ? "Music off" : "Music on"),
+        !S.mute ? volRow("Music", "mvol", 0.85) : null,
+        !S.mute ? volRow("Effects", "svol", 0.85, ding) : null,
         S.music !== false && !S.mute ? $("button", { class: "songnow", id: "songnow", title: "Next song", onclick: musicSkip }, "♪ " + SONGS[(S.song || 0) % SONGS.length].name) : null
       ) : null
     )

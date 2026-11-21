@@ -393,6 +393,9 @@ h1 .v{color:var(--violet)}
 .sico{width:24px;height:24px}
 .sndmenu{position:absolute;right:0;top:56px;z-index:30;background:var(--paper-hi);border:var(--bd) solid var(--ink);box-shadow:var(--sh);padding:12px;display:flex;flex-direction:column;gap:8px;align-items:stretch;min-width:190px}
 .sndmenu .mute{margin:0}
+.vrow{display:flex;flex-direction:column;align-items:stretch;font-size:11px;letter-spacing:.18em;font-weight:600;text-transform:uppercase;margin-top:4px}
+.vrow span{margin-bottom:4px}
+.vrow input[type=range]{width:100%;height:32px;margin:0;accent-color:var(--violet);-webkit-appearance:auto}
 .tabs2{display:flex;gap:6px;border-bottom:var(--bd) solid var(--ink)}
 .tab2{font-family:var(--f-display);font-size:24px;letter-spacing:.04em;padding:6px 22px 2px;border:var(--bd) solid var(--ink);border-bottom:0;background:var(--paper);margin-bottom:calc(-1 * var(--bd));color:var(--steel-dk)}
 .tab2[aria-selected="true"]{background:var(--paper-hi);color:var(--ink)}
@@ -579,11 +582,14 @@ function icon(id, cls="gico"){
 
 /* ================= sound + speech + confetti ================= */
 let AC=null;
-let SFX=null; // lo-fi: soft waves + warm low-pass, no square/saw buzz
+let SFX=null, SFXV=null; // lo-fi: soft waves + warm low-pass, no square/saw buzz
+const vol=(k,d)=>{ const v=S[k]; return typeof v==="number"?Math.max(0,Math.min(1,v)):d; };
+const curve=v=>v*v; // sliders feel even to the ear
 function tone(freqs, type="sine", dur=.09){
   if(S.mute) return;
   try{ AC=AC||new (window.AudioContext||window.webkitAudioContext)();
-    if(!SFX){ SFX=AC.createBiquadFilter(); SFX.type="lowpass"; SFX.frequency.value=1800; SFX.Q.value=.5; SFX.connect(AC.destination); }
+    if(!SFX){ SFX=AC.createBiquadFilter(); SFX.type="lowpass"; SFX.frequency.value=1800; SFX.Q.value=.5;
+      SFXV=AC.createGain(); SFXV.gain.value=curve(vol("svol",.85))*1.4; SFX.connect(SFXV); SFXV.connect(AC.destination); }
     const w = type==="sine" ? "sine" : "triangle";
     freqs.forEach((f,i)=>{ const o=AC.createOscillator(), g=AC.createGain(); o.type=w; o.frequency.value=f>1000?f/2:f;
       const t=AC.currentTime+i*dur, d=Math.max(dur,.05); g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.055,t+.015); g.gain.exponentialRampToValueAtTime(.0001,t+d*2.2);
@@ -643,7 +649,7 @@ function acUnlock(){ if(UNLOCKED) return; try{ AC=AC||new (window.AudioContext||
       const pr=SILENT.play(); if(pr&&pr.catch) pr.catch(()=>{}); }
     UNLOCKED=true; }catch(e){} }
 function muInit(){ AC=AC||new (window.AudioContext||window.webkitAudioContext)();
-  if(!MU.lp){ MU.lp=AC.createBiquadFilter(); MU.lp.type="lowpass"; MU.lp.frequency.value=1400; MU.lp.Q.value=.7; MU.lp.connect(AC.destination);
+  if(!MU.lp){ MU.lp=AC.createBiquadFilter(); MU.lp.type="lowpass"; MU.lp.frequency.value=1400; MU.lp.Q.value=.7; MU.vol=AC.createGain(); MU.vol.gain.value=curve(vol("mvol",.85))*1.4; MU.lp.connect(MU.vol); MU.vol.connect(AC.destination);
     MU.lfo=AC.createOscillator(); MU.lfo.frequency.value=.35; MU.wob=AC.createGain(); MU.wob.gain.value=7; MU.lfo.connect(MU.wob); MU.lfo.start(0); }
   if(!MU.gain){ MU.gain=AC.createGain(); MU.gain.gain.value=.5; MU.gain.connect(MU.lp);
     const N=32, re=new Float32Array(N), im=new Float32Array(N), d=.25; for(let n=1;n<N;n++){ re[n]=Math.sin(2*Math.PI*n*d)/(Math.PI*n); im[n]=(1-Math.cos(2*Math.PI*n*d))/(Math.PI*n); }
@@ -682,7 +688,13 @@ function musicStart(){ if(MU.on){ acWake(); return; } if(S.mute||S.music===false
     MU.on=true; MU.timer=setInterval(muTick,90); muTick(); }catch(e){} }
 function musicStop(){ if(!MU.on) return; MU.on=false; clearInterval(MU.timer);
   try{ const t=AC.currentTime; MU.gain.gain.setValueAtTime(MU.gain.gain.value,t); MU.gain.gain.linearRampToValueAtTime(0,t+.08);
-    const old=MU.gain; setTimeout(()=>old.disconnect(),200); MU.gain=AC.createGain(); MU.gain.gain.value=.5; MU.gain.connect(AC.destination); }catch(e){} }
+    const old=MU.gain; setTimeout(()=>old.disconnect(),200); MU.gain=AC.createGain(); MU.gain.gain.value=.5; MU.gain.connect(MU.lp); }catch(e){} }
+function setVol(k,v){ S[k]=v; save(); try{ const g=k==="mvol"?(MU.vol&&MU.vol.gain):(SFXV&&SFXV.gain), x=curve(v)*1.4;
+  if(g){ g.cancelScheduledValues(AC.currentTime); g.setTargetAtTime(x,AC.currentTime,.03); } }catch(e){}
+  if(k==="mvol"){ if(v===0) musicStop(); else musicStart(); } }
+function volRow(label,k,d,test){ const r=$("input",{type:"range",min:"0",max:"100",step:"1",value:String(Math.round(vol(k,d)*100)),"aria-label":label+" volume"});
+  r.addEventListener("input",()=>setVol(k,r.value/100)); if(test) r.addEventListener("change",test);
+  return $("label",{class:"vrow"},$("span",{},label),r); }
 function musicSkip(){ MU.idx=((S.song||0)+1)%SONGS.length; S.song=MU.idx; save(); musicStop(); musicStart(); const el=document.getElementById("songnow"); if(el) el.textContent="♪ "+SONGS[MU.idx].name; }
 ["pointerdown","touchend","click","keydown"].forEach(ev=>document.addEventListener(ev,e=>{ if(e.type!=="pointerdown") acUnlock(); acWake(); musicStart(); },{capture:true,passive:true}));
 document.addEventListener("visibilitychange",()=>{ if(document.hidden) musicStop(); else musicStart(); });
@@ -732,6 +744,8 @@ function home(){
       UI.snd ? $("div",{class:"sndmenu"},
         $("button",{class:"mute","aria-pressed":S.mute?"true":"false",onclick:()=>{S.mute=!S.mute; save(); if(S.mute) musicStop(); else musicStart(); home();}}, S.mute?"Sound off":"Sound on"),
         $("button",{class:"mute","aria-pressed":S.music===false?"false":"true",onclick:()=>{S.music=S.music===false; save(); if(S.music) musicStart(); else musicStop(); home();}}, S.music===false?"Music off":"Music on"),
+        !S.mute ? volRow("Music","mvol",.85) : null,
+        !S.mute ? volRow("Effects","svol",.85,ding) : null,
         (S.music!==false && !S.mute) ? $("button",{class:"songnow",id:"songnow",title:"Next song",onclick:musicSkip},"♪ "+SONGS[(S.song||0)%SONGS.length].name) : null) : null));
   const tabs=$("nav",{class:"tabs2",role:"tablist"}, [["play","Play"],["lab","Typing Lab"],["map","My Map"]].map(([id,l])=>
     $("button",{class:"tab2",role:"tab","aria-selected":tab===id?"true":"false",onclick:()=>{S.tab=id; save(); UI.snd=false; home();}},l)));
