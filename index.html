@@ -283,6 +283,7 @@ h1 .v{color:var(--violet)}
 .road{position:relative;height:min(62vh,460px);background:linear-gradient(var(--violet-dk),var(--violet) 22%,var(--steel) 23%,var(--field));border:var(--bd) solid var(--ink);box-shadow:var(--sh);overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}
 .road canvas{position:absolute;inset:0;width:100%;height:100%}
 .rtile{position:absolute;left:0;top:0;background:var(--paper-hi);border:var(--bd) solid var(--ink);box-shadow:4px 4px 0 var(--ink);padding:4px 10px 1px;font-family:var(--f-body);font-weight:700;font-size:24px;white-space:nowrap;will-change:transform;transform-origin:50% 100%}
+.rtile.rgone{opacity:0;transition:opacity .3s}
 .rtile.ok{background:var(--good-lt)} .rtile.no{background:var(--bad-lt)}
 .rrun{position:absolute;left:0;bottom:10px;width:54px;height:62px;margin-left:-27px;transition:transform .14s ease-out;will-change:transform}
 .rrun svg{width:100%;height:100%;animation:rbob .32s infinite alternate ease-in-out}
@@ -1738,12 +1739,13 @@ function WordRun(){
       rows.forEach(r=>{ r.z-=v;
         r.tiles.forEach(t=>{ const s=sc(Math.max(r.z,0)); t.style.transform=`translate(${LX(t.lane,Math.max(r.z,0))-t.offsetWidth/2}px,${Y(Math.max(r.z,0))-t.offsetHeight}px) scale(${s})`; t.style.zIndex=String(100-Math.round(r.z*90)); t.style.opacity=r.z>.93?String((1-r.z)/.07):"1"; });
         if(!r.done&&r.z<=0.02) hit(r); });
-      rows=rows.filter(r=>{ if(r.z<-.18){ r.tiles.forEach(t=>t.remove()); return false; } return true; });
+      rows=rows.filter(r=>!r.done);
       draw();
       if(wi>=words.length&&!rows.length) return end();
       raf=requestAnimationFrame(frame);
     }
     function hit(r){ r.done=true; const ok=lane===r.good, t=r.tiles[lane];
+      r.tiles.forEach(x=>{ if(x!==t&&x!==r.tiles[r.good]) x.remove(); else x.classList.add("rgone"); }); setTimeout(()=>r.tiles.forEach(x=>x.remove()),320);
       built.append((built.childNodes.length?" ":""), $("span",{class:ok?"bw got":"bw miss"},words[r.i]));
       if(ok){ gotN++; t.classList.add("ok"); tone([520+Math.min(gotN,30)*16],"square",.04); }
       else { lost++; t.classList.add("no"); r.tiles[r.good].classList.add("ok"); buzz(); runner.classList.remove("hit"); void runner.offsetWidth; runner.classList.add("hit");
