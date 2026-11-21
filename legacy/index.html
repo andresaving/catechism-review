@@ -774,7 +774,49 @@ try {
 }
 function acWake() {
   try {
-    if (AC && AC.state !== "running") AC.resume();
+    if (AC && AC.state !== "running" && AC.resume) AC.resume();
+  } catch (e) {
+  }
+}
+let UNLOCKED = false, SILENT = null;
+function acUnlock() {
+  if (UNLOCKED) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const b = AC.createBuffer(1, 1, 22050), src = AC.createBufferSource();
+    src.buffer = b;
+    src.connect(AC.destination);
+    src.start(0);
+    acWake();
+    if (!navigator.audioSession) {
+      if (!SILENT) {
+        const n = 2205, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf), w = (o, t) => {
+          for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i));
+        };
+        w(0, "RIFF");
+        v.setUint32(4, 36 + n * 2, true);
+        w(8, "WAVEfmt ");
+        v.setUint32(16, 16, true);
+        v.setUint16(20, 1, true);
+        v.setUint16(22, 1, true);
+        v.setUint32(24, 22050, true);
+        v.setUint32(28, 44100, true);
+        v.setUint16(32, 2, true);
+        v.setUint16(34, 16, true);
+        w(36, "data");
+        v.setUint32(40, n * 2, true);
+        let bin = "";
+        const u = new Uint8Array(buf);
+        for (let i = 0; i < u.length; i++) bin += String.fromCharCode(u[i]);
+        SILENT = new Audio("data:audio/wav;base64," + btoa(bin));
+        SILENT.loop = true;
+        SILENT.setAttribute("x-webkit-airplay", "deny");
+      }
+      const pr = SILENT.play();
+      if (pr && pr.catch) pr.catch(() => {
+      });
+    }
+    UNLOCKED = true;
   } catch (e) {
   }
 }
@@ -791,7 +833,7 @@ function muInit() {
     MU.wob = AC.createGain();
     MU.wob.gain.value = 7;
     MU.lfo.connect(MU.wob);
-    MU.lfo.start();
+    MU.lfo.start(0);
   }
   if (!MU.gain) {
     MU.gain = AC.createGain();
@@ -933,7 +975,8 @@ function musicSkip() {
   const el = document.getElementById("songnow");
   if (el) el.textContent = "♪ " + SONGS[MU.idx].name;
 }
-["pointerdown", "touchend", "click", "keydown"].forEach((ev) => document.addEventListener(ev, () => {
+["pointerdown", "touchend", "click", "keydown"].forEach((ev) => document.addEventListener(ev, (e) => {
+  if (e.type !== "pointerdown") acUnlock();
   acWake();
   musicStart();
 }, { capture: true, passive: true }));
