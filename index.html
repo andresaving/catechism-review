@@ -301,6 +301,14 @@ h1 .v{color:var(--violet)}
 .built .piece.w{padding:3px 7px 1px}
 .numopts{display:flex;gap:10px;flex-wrap:wrap}
 .numopts .opt{min-width:72px;justify-content:center;font-family:var(--f-display);font-size:26px}
+.duelfs{position:fixed;inset:0;z-index:60;display:grid;grid-template-rows:1fr 1fr;background:var(--ink);gap:4px;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+.duelfs .dhalf{box-shadow:none;border:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px;gap:8px}
+.duelfs .dhalf.flip{transform:rotate(180deg)}
+.duelfs .qpanel{padding:10px 14px} .duelfs .qtext{font-size:clamp(18px,2.6vh,24px)}
+.duelfs .dhead{align-items:center;gap:10px} .duelfs .dvs{font-family:var(--f-display);font-size:26px;margin-left:auto}
+.dquit{font-family:var(--f-label);font-size:12px;letter-spacing:.1em;text-transform:uppercase;background:none;border:2px solid var(--ink);padding:4px 8px}
+.dfoot{display:flex;gap:10px;align-items:center;flex-wrap:wrap} .dfoot .msg{margin:0}
+.noscroll,.noscroll body{overflow:hidden}
 .duel{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
 @media (max-width:640px){.duel{grid-template-columns:1fr}}
 .dside{border:var(--bd) solid var(--ink);box-shadow:var(--sh-sm);background:var(--paper-hi);padding:12px;display:flex;flex-direction:column;gap:10px;position:relative;touch-action:manipulation}
@@ -1830,27 +1838,31 @@ function duelChunks(text){ // 6–9 small pieces, so short answers are still a r
 function Duel(){
   G.stage.replaceChildren(
     $("div",{class:"apanel"},$("span",{class:"alabel"},"How it works"),
-      $("p",{class:"atext"},"Sit side by side. You both get the same question, each with your own pieces. Build the answer in order. First one done wins the point. A wrong tap freezes you for 2 seconds. First to 5 wins!")),
+      $("p",{class:"atext"},"Lay the iPad flat between you and sit at opposite ends. The screen splits in two, one half facing each of you. Same question, your own pieces. Build the answer in order. First one done wins the point. A wrong tap freezes you for 2 seconds. First to 5 wins!")),
     ...pickPlayers(2,"Who's dueling?", names=>duel(names)));
   function duel(names){
     const me=G, score=[0,0], WIN=5, used=new Set(); let timers=[];
-    G.stop=()=>timers.forEach(clearTimeout);
-    const board=$("div",{class:"vs"},"");
+    const fs=$("div",{class:"duelfs"}); document.body.append(fs); document.documentElement.classList.add("noscroll");
+    const close=()=>{ timers.forEach(clearTimeout); fs.remove(); document.documentElement.classList.remove("noscroll"); };
+    G.stop=close;
+    const TAP="ontouchstart" in window ? "touchstart" : "pointerdown";
     function round(){
       if(G!==me) return;
       timers.forEach(clearTimeout); timers=[];
       let item=pick(1)[0], guard=0; while(used.has(item.n)&&guard++<30) item=pick(1)[0]; used.add(item.n);
       const parts=duelChunks(item.a); let over=false;
-      board.textContent=`${names[0]} ${score[0]} · ${score[1]} ${names[1]}`;
       const sides=[0,1].map(p=>{
         let next=0;
-        const built=$("div",{class:"built"}), bank=$("div",{class:"pieces"});
-        const el=$("div",{class:"dside"+(p?" p2":"")},
-          $("div",{class:"dhead"},$("span",{class:"dname"},names[p]),$("span",{class:"dscore"},String(score[p]))),
-          built, bank, $("div",{class:"ice"},"FROZEN!"));
+        const built=$("div",{class:"built"}), bank=$("div",{class:"pieces"}), foot=$("div",{class:"dfoot"});
+        const quit=$("button",{class:"dquit","aria-label":"End the duel"},"✕ End");
+        quit.addEventListener("click",()=>{ close(); play("duel"); });
+        const el=$("div",{class:"dside dhalf"+(p?" p2 flip":"")},
+          $("div",{class:"dhead"},$("span",{class:"dname"},names[p]),$("span",{class:"dvs"},`${score[p]} – ${score[1-p]}`),quit),
+          qPanel(item), built, bank, foot, $("div",{class:"ice"},"FROZEN!"));
+        el.foot=foot;
         shuffle(parts.map((t,i)=>({t,i}))).forEach(pc=>{
           const b=$("button",{class:"piece"},pc.t);
-          b.addEventListener("pointerdown",e=>{
+          b.addEventListener(TAP,e=>{
             e.preventDefault();
             if(over||b.disabled||el.classList.contains("frozen")) return;
             if(pc.i===next || parts[pc.i]===parts[next]){
@@ -1860,20 +1872,19 @@ function Duel(){
               buzz(); shake(b); el.classList.add("frozen");
               timers.push(setTimeout(()=>el.classList.remove("frozen"),2000));
             }
-          });
+          },{passive:false});
           bank.append(b);
         });
         return el;
       });
       function win(p){
         over=true; score[p]++; bump(item.n,true); ding(); sides[p].classList.add("won");
-        sides[p].querySelector(".dscore").textContent=String(score[p]);
-        board.textContent=`${names[0]} ${score[0]} · ${score[1]} ${names[1]}`;
-        if(score[p]>=WIN){ timers.push(setTimeout(()=>champ(p),900)); return; }
-        act.replaceChildren($("p",{class:"msg ok"},names[p]+" gets the point!"), nextBtn("Next question",round), hearBtn(item.q+" "+item.a)||"");
+        sides.forEach((el,q)=>{ el.querySelector(".dvs").textContent=`${score[q]} – ${score[1-q]}`;
+          el.foot.replaceChildren($("p",{class:"msg "+(q===p?"ok":"no")}, q===p?"You get the point!":names[p]+" gets the point!"),
+            score[p]>=WIN?"":$("button",{class:"btn vi",onclick:round},"Next question"), hearBtn(item.q+" "+item.a)||""); });
+        if(score[p]>=WIN) timers.push(setTimeout(()=>{ close(); champ(p); },1400));
       }
-      const act=$("div",{class:"actions"});
-      G.stage.replaceChildren(board, qPanel(item), $("div",{class:"duel"},...sides), act);
+      fs.replaceChildren(sides[1], sides[0]);
     }
     function champ(p){
       G.stage.replaceChildren($("div",{class:"end pop"},
