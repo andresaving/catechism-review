@@ -1,5 +1,5 @@
 // cache-first so the app works offline once opened
-const C = "wsc-review-v0ice1";
+const C = "wsc-review-run1";
 const FILES = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/favicon-32.png"];
 const M = "wsc-music-1"; // songs survive app updates
 const V = "wsc-voice-1"; // recorded Q&A, cached as heard

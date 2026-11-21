@@ -280,6 +280,17 @@ h1 .v{color:var(--violet)}
 .slips{display:flex;gap:6px;align-items:center;font-family:var(--f-label);font-size:12px;letter-spacing:.14em;text-transform:uppercase}
 .slips i{width:18px;height:18px;border:2px solid var(--ink);background:var(--paper-hi);transform:rotate(45deg)}
 .slips i.gone{background:var(--bad)}
+.road{position:relative;height:min(62vh,460px);background:linear-gradient(var(--violet-dk),var(--violet) 22%,var(--steel) 23%,var(--field));border:var(--bd) solid var(--ink);box-shadow:var(--sh);overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}
+.road canvas{position:absolute;inset:0;width:100%;height:100%}
+.rtile{position:absolute;left:0;top:0;background:var(--paper-hi);border:var(--bd) solid var(--ink);box-shadow:4px 4px 0 var(--ink);padding:4px 10px 1px;font-family:var(--f-body);font-weight:700;font-size:24px;white-space:nowrap;will-change:transform;transform-origin:50% 100%}
+.rtile.ok{background:var(--good-lt)} .rtile.no{background:var(--bad-lt)}
+.rrun{position:absolute;left:0;bottom:10px;width:54px;height:62px;margin-left:-27px;transition:transform .14s ease-out;will-change:transform}
+.rrun svg{width:100%;height:100%;animation:rbob .32s infinite alternate ease-in-out}
+@keyframes rbob{to{transform:translateY(-5px)}}
+.rrun.hit svg{animation:shake .3s}
+.hearts{display:flex;gap:4px;font-size:22px;line-height:1;color:var(--magenta)} .hearts .gone{opacity:.18}
+.rmsg{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);font-family:var(--f-display);font-size:34px;letter-spacing:.04em;color:var(--paper-hi);text-shadow:3px 3px 0 var(--ink);text-align:center;pointer-events:none;width:90%}
+.rpad{display:flex;gap:10px;justify-content:center;margin-top:10px} .rpad .btn{min-width:110px;font-size:26px}
 .soupbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .runno{font-family:var(--f-display);font-size:26px;letter-spacing:.03em}
 .soup{display:flex;flex-wrap:wrap;gap:8px}
@@ -465,7 +476,8 @@ const GAMES = [
   {id:"match", name:"Match Up",       how:"Pair each question with its answer.",            tag:"Tap pairs"},
   {id:"build", name:"Build It",       how:"Snap the answer back together in order.",        tag:"Order"},
   {id:"blitz", name:"Lightning Round",how:"60 seconds. How many can you get?",              tag:"Timed"},
-  {id:"gauntlet",name:"The Gauntlet", how:"Q1, Q2, Q3… in order. Put the word soup back together. Three slips on one answer and the run is over.", tag:"How far?", feature:true},
+  {id:"gauntlet",name:"The Gauntlet", how:"Q1, Q2, Q3… in order. Put the word soup back together. Three slips on one answer and you're knocked back 5 questions.", tag:"How far?", feature:true},
+  {id:"run",   name:"Word Run",       how:"Three lanes race at you. Steer into the next word of the answer. Dodge the fakes!", tag:"Runner", feature:true},
   {id:"duel",  name:"Sibling Duel",   how:"Two players, one iPad. Same question, race to build it first. A wrong tap freezes you.", tag:"2 players"},
   {id:"flip",  name:"Flip It",        how:"You get the answer. Which question was it? Then guess its number.", tag:"Reverse"},
   {id:"swap",  name:"Spot the Swap",  how:"One word might be wrong. Find it!",              tag:"Detective"},
@@ -588,6 +600,7 @@ const ICON = {
   rain:'<path d="M7 15a4 4 0 1 1 .9-7.9A5 5 0 0 1 17.6 8 3.5 3.5 0 0 1 17 15z"/><path d="M8.5 18l-1 3M12.5 18l-1 3M16.5 18l-1 3"/>',
   first:'<path d="M3.5 19 8.5 5l5 14M5.3 14h6.4"/><path d="M15.5 19h5"/>',
   race:'<path d="M5 21.5V3"/><path d="M5 4h13l-3 4.5L18 13H5"/>',
+  run:'<circle cx="14.5" cy="4" r="2"/><path d="M8 21l3-5 3 2v4M6 12l3-3.5 4 1.5 2 3.5 3 1M11 16l2-5.5"/>',
   gauntlet:'<path d="M12 2.5 4 5.5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10v-6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
   duel:'<path d="M3 3l10 10M3 3h3.5M3 3v3.5"/><path d="M21 3 11 13M21 3h-3.5M21 3v3.5"/><path d="M6.5 14.5l3 3M5 19l2.5-2.5M17.5 14.5l-3 3M19 19l-2.5-2.5"/>',
   flip:'<path d="M4 9a8 8 0 0 1 14-3.5L20 8"/><path d="M20 3.5V8h-4.5"/><path d="M20 15a8 8 0 0 1-14 3.5L4 16"/><path d="M4 20.5V16h4.5"/>',
@@ -816,7 +829,7 @@ function home(){
       $("div",{class:"row2"},
         $("button",{class:"cont",onclick:()=>play(last.id)},$("span",{class:"playtri"}),$("span",{},$("small",{},S.lastGame?"Continue":"Start here"),$("b",{},last.name))),
         $("button",{class:"feat2",onclick:()=>play(feat.id)},$("span",{class:"fico"},icon(feat.id)),
-          $("span",{},$("small",{},"Challenge"+(bestName&&recs[bestName]?" · "+bestName+"'s best Q1–"+recs[bestName]:"")),$("b",{},feat.name),$("span",{class:"fhow"},"Q1 onward, in order. Three slips and you're out.")))),
+          $("span",{},$("small",{},"Challenge"+(bestName&&recs[bestName]?" · "+bestName+"'s best Q1–"+recs[bestName]:"")),$("b",{},feat.name),$("span",{class:"fhow"},"Q1 onward, in order. Slip up? Back 5 and keep going.")))),
       $("div",{class:"grid2"}, GAMES.filter(g=>!g.lab && g.id!=="gauntlet").map(tile)));
   } else if(tab==="lab"){
     body=$("section",{class:"stage"},
@@ -903,7 +916,7 @@ function play(id){
   G.stage=$("div",{class:"stage"});
   app.append(G.bar,$("p",{class:"ghow"},g.how),G.stage);
   scrollTo(0,0);
-  ({battle:Battle,typeit:TypeItOut,memtype:MemoryType,drop:WordDrop,fill:FillIn,match:MatchUp,build:BuildIt,blitz:Blitz,swap:Swap,say:SayIt,gauntlet:Gauntlet,duel:Duel,flip:FlipIt,keypath:KeyPath,rain:WordRain,first:FirstLetters,race:PaceRace})[id]();
+  ({battle:Battle,typeit:TypeItOut,memtype:MemoryType,drop:WordDrop,fill:FillIn,match:MatchUp,build:BuildIt,blitz:Blitz,swap:Swap,say:SayIt,gauntlet:Gauntlet,run:WordRun,duel:Duel,flip:FlipIt,keypath:KeyPath,rain:WordRain,first:FirstLetters,race:PaceRace})[id]();
 }
 function pips(n){ G.pipEl=$("div",{class:"pips","aria-hidden":"true"},Array.from({length:n},()=>$("span",{class:"pip"}))); G.bar.append(G.pipEl); }
 function setPip(i,state){ const p=G.pipEl&&G.pipEl.children[i]; if(p) p.className="pip "+state; }
@@ -1606,12 +1619,12 @@ function Gauntlet(){
     Object.entries(recs).sort((a,b)=>b[1]-a[1]).map(([n,v])=>$("li",{},$("b",{},v>=S.max?"ALL "+v:"Q1–"+v),n))) : null;
   G.stage.replaceChildren(
     $("div",{class:"apanel"},$("span",{class:"alabel"},"How it works"),
-      $("p",{class:"atext"},`Start at Q1 and go in order, up to Q${S.max}. Each answer is scrambled into a soup of words, with a few fake words mixed in. Tap the words in order. Three slips on one answer and your run ends.`),
+      $("p",{class:"atext"},`Start at Q1 and go in order, up to Q${S.max}. Each answer is scrambled into a soup of words, with a few fake words mixed in. Tap the words in order. Three slips on one answer knocks you back 5 questions, so keep going! Your record is the furthest you reach.`),
       recList?$("span",{class:"alabel",style:"margin-top:12px"},"Records"):null, recList),
     ...pickPlayers(1,"Who's running?", ([name])=>run(name)));
 
   function run(name){
-    let n=1; const best=recs[name]||0;
+    let n=1, far=0, knocks=0; const best=recs[name]||0;
     function q(){
       if(n>S.max) return over(true);
       const item=byN(n), words=soupWords(item.a);
@@ -1619,6 +1632,7 @@ function Gauntlet(){
       const fakes=distractors(words, nFake);
       let next=0, slips=0, done=false;
       const slipEl=$("div",{class:"slips"},"Slips",$("i"),$("i"),$("i"));
+      const stopB=n>1||knocks?$("button",{class:"back",style:"margin-left:auto",onclick:()=>over(false)},"Stop run"):null;
       const built=$("div",{class:"built","aria-live":"polite"});
       const soup=$("div",{class:"soup"});
       const msg=$("div",{class:"msg"},n===1?"Tap the first word.":"");
@@ -1629,7 +1643,7 @@ function Gauntlet(){
           if(c.real && norm(c.w)===norm(words[next]) ){
             b.disabled=true; b.classList.add("spent"); built.append($("span",{class:"piece w pop"},words[next])); next++; tone([480+Math.min(next,30)*18],"square",.04);
             msg.className="msg"; msg.textContent="";
-            if(next===words.length){ done=true; bump(item.n,slips===0); ding();
+            if(next===words.length){ done=true; bump(item.n,slips===0); ding(); far=Math.max(far,n);
               if(n>best && n>(recs[name]||0)){ recs[name]=n; save(); }
               msg.className="msg ok"; msg.textContent = slips? "Q"+n+" cleared!" : "Q"+n+" clean!";
               setTimeout(()=>{ n++; q(); }, 650); }
@@ -1637,20 +1651,22 @@ function Gauntlet(){
             slips++; buzz(); shake(b); slipEl.children[slips-1].classList.add("gone");
             msg.className="msg no"; msg.textContent = c.real ? "Not that one yet." : "That word isn't in this answer!";
             if(!c.real){ b.disabled=true; b.classList.add("spent"); }
-            if(slips>=3){ done=true; bump(item.n,false);
+            if(slips>=3){ done=true; bump(item.n,false); knocks++; G.lastItem=item;
+              const back=Math.max(1,n-5);
               built.replaceChildren($("p",{class:"atext"},item.a)); soup.remove();
-              setTimeout(()=>over(false), 300); }
+              msg.className="msg no"; msg.textContent= n===1 ? "Three slips! Read it, then try Q1 again." : "Three slips! Knocked back to Q"+back+".";
+              msg.after($("div",{class:"actions"}, nextBtn(n===1?"Try Q1 again":"Run from Q"+back+" →",()=>{ n=back; q(); }),
+                $("button",{class:"btn alt",onclick:()=>over(false)},"Stop run"), hearBtn(item.q+" "+item.a)||"")); }
           }
         });
         soup.append(b);
       });
       G.stage.replaceChildren(
-        $("div",{class:"soupbar"},$("span",{class:"runno"},name+" · Q"+n+" of "+S.max),slipEl),
+        $("div",{class:"soupbar"},$("span",{class:"runno"},name+" · Q"+n+" of "+S.max),slipEl,stopB||""),
         qPanel(item), $("div",{class:"apanel"},$("span",{class:"alabel"},"Your answer"),built), soup, msg);
-      G.lastItem=item;
     }
     function over(all){
-      const reached = all ? S.max : n-1;
+      const reached = all ? S.max : far;
       const rec = recs[name]||0, newRec = reached>best;
       if(all && reached>(recs[name]||0)){ recs[name]=reached; save(); }
       G.stage.replaceChildren($("div",{class:"end pop"},
@@ -1666,6 +1682,95 @@ function Gauntlet(){
     }
     q();
   }
+}
+
+/* ---------- Word Run: a lane runner. Steer into the next word; dodge the fakes ---------- */
+function WordRun(){
+  const me=G, items=pick(3); pips(3); let idx=0, speed=S.runSpeed||1, raf=0, keyH=null;
+  G.stop=()=>{ cancelAnimationFrame(raf); if(keyH) document.removeEventListener("keydown",keyH); };
+  function round(){
+    G.stop();
+    if(idx>=items.length){ S.runSpeed=speed; save(); G.note=`Run speed: ${Math.round(speed*100)}%. It picks up where you left off next time.`; return finish(); }
+    setPip(idx,"now");
+    const item=items[idx], c=clip(item.a,170), words=soupWords(c.t);
+    const road=$("div",{class:"road"}), cv=document.createElement("canvas"); road.append(cv);
+    const runner=$("div",{class:"rrun"}); runner.innerHTML='<svg viewBox="0 0 54 62"><ellipse cx="27" cy="59" rx="15" ry="3" fill="rgba(0,0,0,.25)"/><circle cx="27" cy="12" r="9" fill="#f2cf1d" stroke="#11100d" stroke-width="3"/><path d="M27 21v18M27 26l-11 8M27 26l11-6M27 39l-9 17M27 39l10 16" stroke="#11100d" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M20 21h14l-2 14H22z" fill="#d44d8a" stroke="#11100d" stroke-width="3" stroke-linejoin="round"/></svg>';
+    road.append(runner);
+    const hint=$("div",{class:"rmsg"},"TAP TO RUN!"); road.append(hint);
+    const hearts=$("div",{class:"hearts","aria-label":"3 hearts"},$("span",{},"♥"),$("span",{},"♥"),$("span",{},"♥"));
+    const built=$("p",{class:"atext"}), msg=$("div",{class:"msg"},"Tap a lane, swipe, or use ← →."), act=$("div",{class:"actions"});
+    const left=$("button",{class:"btn alt","aria-label":"Move left"},"←"), right=$("button",{class:"btn alt","aria-label":"Move right"},"→");
+    let lane=1, wi=0, rows=[], last=0, started=false, over=false, lost=0, gotN=0, scroll=0;
+    const W=()=>road.clientWidth, H=()=>road.clientHeight, HOR=()=>H()*.23;
+    // depth z: 1 = horizon, 0 = at the runner. scale shrinks toward the horizon
+    const sc=z=>1/(1+3.2*z), Y=z=>HOR()+(H()-HOR()-26)*((sc(z)-sc(1))/(1-sc(1)));
+    const LX=(l,z)=>W()/2+(l-1)*W()*.31*sc(z);
+    function setLane(l){ lane=Math.max(0,Math.min(2,l)); runner.style.transform=`translateX(${LX(lane,0)}px)`; }
+    function fakesFor(i){
+      const right=norm(words[i]), later=words.slice(i+2).filter(w=>norm(w)!==right);
+      const out=[]; if(later.length&&Math.random()<.6) out.push(later[Math.floor(Math.random()*later.length)]);
+      distractors(words,4).forEach(w=>{ if(out.length<2&&norm(w)!==right&&!out.some(o=>norm(o)===norm(w))) out.push(w); });
+      while(out.length<2) out.push(["banana","pizza","rocket"][out.length]);
+      return out;
+    }
+    function spawn(){
+      if(wi>=words.length) return;
+      const i=wi++, good=Math.floor(Math.random()*3), f=fakesFor(i);
+      const tiles=[0,1,2].map(l=>{ const t=$("div",{class:"rtile"}, l===good?words[i]:f.shift()); t.lane=l; road.insertBefore(t,runner); return t; });
+      rows.push({z:1,i,good,tiles,done:false});
+    }
+    function draw(){
+      const w=cv.width=W()*devicePixelRatio, h=cv.height=H()*devicePixelRatio, k=devicePixelRatio, x=cv.getContext("2d");
+      const hy=HOR()*k, top=w*.04, bot=w*.98;
+      x.fillStyle="#3a372f"; x.beginPath(); x.moveTo(w/2-top,hy); x.lineTo(w/2+top,hy); x.lineTo(w/2+bot/2+w*.02,h); x.lineTo(w/2-bot/2-w*.02,h); x.closePath(); x.fill();
+      x.strokeStyle="#11100d"; x.lineWidth=3*k; x.stroke();
+      x.strokeStyle="rgba(248,245,235,.85)"; x.lineWidth=3*k;
+      for(let s=0;s<14;s++){ const z0=((s/14)+scroll)%1, z1=z0+.03; if(z1>1) continue;
+        [-.5,.5].forEach(o=>{ x.beginPath(); x.moveTo((W()/2+o*W()*.31*sc(z0))*k,Y(z0)*k); x.lineTo((W()/2+o*W()*.31*sc(z1))*k,Y(z1)*k); x.stroke(); }); }
+    }
+    function frame(ts){
+      if(G!==me||over) return;
+      const dt=Math.min(50,ts-(last||ts))/1000; last=ts;
+      const v=dt/(3.6/speed); scroll=(scroll-v+1)%1;
+      if(!rows.length||rows[rows.length-1].z<.52) spawn();
+      rows.forEach(r=>{ r.z-=v;
+        r.tiles.forEach(t=>{ const s=sc(Math.max(r.z,0)); t.style.transform=`translate(${LX(t.lane,Math.max(r.z,0))-t.offsetWidth/2}px,${Y(Math.max(r.z,0))-t.offsetHeight}px) scale(${s})`; t.style.zIndex=String(100-Math.round(r.z*90)); t.style.opacity=r.z>.93?String((1-r.z)/.07):"1"; });
+        if(!r.done&&r.z<=0.02) hit(r); });
+      rows=rows.filter(r=>{ if(r.z<-.18){ r.tiles.forEach(t=>t.remove()); return false; } return true; });
+      draw();
+      if(wi>=words.length&&!rows.length) return end();
+      raf=requestAnimationFrame(frame);
+    }
+    function hit(r){ r.done=true; const ok=lane===r.good, t=r.tiles[lane];
+      built.append((built.childNodes.length?" ":""), $("span",{class:ok?"bw got":"bw miss"},words[r.i]));
+      if(ok){ gotN++; t.classList.add("ok"); speed=Math.min(2.4,speed*1.02); tone([520+Math.min(gotN,30)*16],"square",.04); }
+      else { lost++; t.classList.add("no"); r.tiles[r.good].classList.add("ok"); buzz(); runner.classList.remove("hit"); void runner.offsetWidth; runner.classList.add("hit");
+        hearts.children[lost-1].classList.add("gone"); speed=Math.max(.6,speed*.9);
+        if(lost>=3) return end(true); }
+    }
+    function end(dead){
+      over=true; cancelAnimationFrame(raf); left.disabled=right.disabled=true;
+      const ok=!dead; record(item,ok); setPip(idx,ok?"ok":"no");
+      road.append($("div",{class:"rmsg"}, dead?"WIPEOUT!":lost?"MADE IT!":"PERFECT RUN!"));
+      if(dead) built.replaceChildren(item.a); else if(!lost) confetti();
+      msg.className="msg "+(ok?"ok":"no"); msg.textContent= dead ? "Three bumps. Read it through, then run the next one!" : `${gotN} of ${words.length} words, ${3-lost} heart${3-lost===1?"":"s"} left.`;
+      act.replaceChildren(nextBtn(idx===items.length-1?"Finish":"Next →",()=>{idx++; round();}), hearBtn(item.q+" "+item.a)||"");
+    }
+    function go(){ if(started||over) return; started=true; hint.remove(); last=0; raf=requestAnimationFrame(frame); }
+    let sx=null;
+    const down=x=>{ sx=x; }, up=x=>{ if(over) return; if(!started){ go(); sx=null; return; }
+      const r=road.getBoundingClientRect(); if(sx!==null&&Math.abs(x-sx)>30) setLane(lane+(x>sx?1:-1)); else setLane(Math.floor((x-r.left)/(r.width/3))); sx=null; };
+    if("ontouchstart" in window){ road.addEventListener("touchstart",e=>{ e.preventDefault(); down(e.changedTouches[0].clientX); },{passive:false}); road.addEventListener("touchend",e=>{ e.preventDefault(); up(e.changedTouches[0].clientX); },{passive:false}); }
+    else { road.addEventListener("mousedown",e=>down(e.clientX)); road.addEventListener("mouseup",e=>up(e.clientX)); }
+    left.addEventListener("click",()=>{ go(); setLane(lane-1); }); right.addEventListener("click",()=>{ go(); setLane(lane+1); });
+    keyH=e=>{ if(e.key==="ArrowLeft"){ e.preventDefault(); go(); setLane(lane-1); } else if(e.key==="ArrowRight"){ e.preventDefault(); go(); setLane(lane+1); } else if(e.key===" "&&!started){ e.preventDefault(); go(); } };
+    document.addEventListener("keydown",keyH);
+    G.stage.replaceChildren($("div",{class:"soupbar"},$("span",{class:"runno"},"Q"+item.n),hearts), qPanel(item), road, $("div",{class:"rpad"},left,right),
+      $("div",{class:"apanel"},$("span",{class:"alabel"},c.cut?"Your answer · first part":"Your answer"),built), msg, act);
+    G.lastItem=item;
+    requestAnimationFrame(()=>{ setLane(1); draw(); });
+  }
+  round();
 }
 
 /* ---------- Flip It: answer → which question → which number ---------- */
