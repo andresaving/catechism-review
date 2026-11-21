@@ -682,11 +682,33 @@ function muTick(){
     MU.qi++;
   }
 }
-function musicStart(){ if(MU.on){ acWake(); return; } if(S.mute||S.music===false||document.hidden) return;
-  try{ muInit(); if(AC.state==="suspended") AC.resume(); MU.idx=(S.song||0)%SONGS.length; MU.loop=0; muLoad(); MU.base=AC.currentTime+.15;
-    MU.gain.gain.cancelScheduledValues(AC.currentTime); MU.gain.gain.setValueAtTime(.5,AC.currentTime);
-    MU.on=true; MU.timer=setInterval(muTick,90); muTick(); }catch(e){} }
-function musicStop(){ if(!MU.on) return; MU.on=false; clearInterval(MU.timer);
+/* recorded lo-fi arrangements (music/<slug>.m4a); the synth above is the offline fallback */
+const MBASE = location.pathname.indexOf("/legacy")>=0 ? "../music/" : "music/";
+const slugOf=n=>n.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+const MF={src:null,buf:null,idx:-1,startAt:0,offset:0,tok:0,fail:false};
+function songLabel(){ const el=document.getElementById("songnow"); if(el) el.textContent="\u266a "+SONGS[MU.idx].name; }
+function mfLoad(i,cb){ if(MF.buf&&MF.idx===i) return cb(MF.buf);
+  MF.buf=null; MF.idx=-1;   // one decoded song in memory at a time (old iPad)
+  const x=new XMLHttpRequest(); x.open("GET",MBASE+slugOf(SONGS[i].name)+".m4a"); x.responseType="arraybuffer";
+  x.onload=()=>{ if(x.status>=400||!x.response) return cb(null);
+    try{ const ok=b=>{ MF.buf=b; MF.idx=i; cb(b); }, bad=()=>cb(null), pr=AC.decodeAudioData(x.response,ok,bad); if(pr&&pr.catch) pr.catch(()=>{}); }catch(e){ cb(null); } };
+  x.onerror=()=>cb(null); x.send(); }
+function mfPlay(i,off){ const tok=++MF.tok;
+  mfLoad(i,b=>{ if(tok!==MF.tok||!MU.on) return;
+    if(!b){ MF.fail=true; synthGo(); return; }
+    if(off>=b.duration-.5) off=0;
+    const s=AC.createBufferSource(); s.buffer=b; s.connect(MU.fv);
+    s.onended=()=>{ if(MF.src!==s||!MU.on) return; MF.src=null; MF.offset=0; MU.idx=(MU.idx+1)%SONGS.length; S.song=MU.idx; save(); songLabel(); mfPlay(MU.idx,0); };
+    MF.src=s; MF.startAt=AC.currentTime-off; s.start(0,off); }); }
+function synthGo(){ MU.loop=0; muLoad(); MU.base=AC.currentTime+.15;
+  MU.gain.gain.cancelScheduledValues(AC.currentTime); MU.gain.gain.setValueAtTime(.5,AC.currentTime);
+  MU.timer=setInterval(muTick,90); muTick(); }
+function musicStart(){ if(MU.on){ acWake(); return; } if(S.mute||S.music===false||document.hidden||vol("mvol",.85)===0) return;
+  try{ muInit(); if(AC.state==="suspended"&&AC.resume) AC.resume(); MU.idx=(S.song||0)%SONGS.length; MU.on=true;
+    if(!MU.fv){ MU.fv=AC.createGain(); MU.fv.gain.value=.75; MU.fv.connect(MU.vol); }
+    if(MF.fail) synthGo(); else { songLabel(); mfPlay(MU.idx, MF.idx===MU.idx?MF.offset:0); } }catch(e){} }
+function musicStop(){ if(!MU.on) return; MU.on=false; clearInterval(MU.timer); MF.tok++;
+  if(MF.src){ try{ const s=MF.src; MF.src=null; MF.offset=(AC.currentTime-MF.startAt)%(s.buffer.duration||1); s.onended=null; s.stop(0); }catch(e){} }
   try{ const t=AC.currentTime; MU.gain.gain.setValueAtTime(MU.gain.gain.value,t); MU.gain.gain.linearRampToValueAtTime(0,t+.08);
     const old=MU.gain; setTimeout(()=>old.disconnect(),200); MU.gain=AC.createGain(); MU.gain.gain.value=.5; MU.gain.connect(MU.lp); }catch(e){} }
 function setVol(k,v){ S[k]=v; save(); try{ const g=k==="mvol"?(MU.vol&&MU.vol.gain):(SFXV&&SFXV.gain), x=curve(v)*1.4;
@@ -695,7 +717,7 @@ function setVol(k,v){ S[k]=v; save(); try{ const g=k==="mvol"?(MU.vol&&MU.vol.ga
 function volRow(label,k,d,test){ const r=$("input",{type:"range",min:"0",max:"100",step:"1",value:String(Math.round(vol(k,d)*100)),"aria-label":label+" volume"});
   r.addEventListener("input",()=>setVol(k,r.value/100)); if(test) r.addEventListener("change",test);
   return $("label",{class:"vrow"},$("span",{},label),r); }
-function musicSkip(){ MU.idx=((S.song||0)+1)%SONGS.length; S.song=MU.idx; save(); musicStop(); musicStart(); const el=document.getElementById("songnow"); if(el) el.textContent="♪ "+SONGS[MU.idx].name; }
+function musicSkip(){ MU.idx=((S.song||0)+1)%SONGS.length; S.song=MU.idx; save(); musicStop(); MF.offset=0; musicStart(); const el=document.getElementById("songnow"); if(el) el.textContent="♪ "+SONGS[MU.idx].name; }
 ["pointerdown","touchend","click","keydown"].forEach(ev=>document.addEventListener(ev,e=>{ if(e.type!=="pointerdown") acUnlock(); acWake(); musicStart(); },{capture:true,passive:true}));
 document.addEventListener("visibilitychange",()=>{ if(document.hidden) musicStop(); else musicStart(); });
 const canSpeak = "speechSynthesis" in window;

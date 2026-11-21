@@ -943,24 +943,95 @@ function muTick() {
     MU.qi++;
   }
 }
+const MBASE = location.pathname.indexOf("/legacy") >= 0 ? "../music/" : "music/";
+const slugOf = (n) => n.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+const MF = { src: null, buf: null, idx: -1, startAt: 0, offset: 0, tok: 0, fail: false };
+function songLabel() {
+  const el = document.getElementById("songnow");
+  if (el) el.textContent = "♪ " + SONGS[MU.idx].name;
+}
+function mfLoad(i, cb) {
+  if (MF.buf && MF.idx === i) return cb(MF.buf);
+  MF.buf = null;
+  MF.idx = -1;
+  const x = new XMLHttpRequest();
+  x.open("GET", MBASE + slugOf(SONGS[i].name) + ".m4a");
+  x.responseType = "arraybuffer";
+  x.onload = () => {
+    if (x.status >= 400 || !x.response) return cb(null);
+    try {
+      const ok = (b) => {
+        MF.buf = b;
+        MF.idx = i;
+        cb(b);
+      }, bad = () => cb(null), pr = AC.decodeAudioData(x.response, ok, bad);
+      if (pr && pr.catch) pr.catch(() => {
+      });
+    } catch (e) {
+      cb(null);
+    }
+  };
+  x.onerror = () => cb(null);
+  x.send();
+}
+function mfPlay(i, off) {
+  const tok = ++MF.tok;
+  mfLoad(i, (b) => {
+    if (tok !== MF.tok || !MU.on) return;
+    if (!b) {
+      MF.fail = true;
+      synthGo();
+      return;
+    }
+    if (off >= b.duration - 0.5) off = 0;
+    const s = AC.createBufferSource();
+    s.buffer = b;
+    s.connect(MU.fv);
+    s.onended = () => {
+      if (MF.src !== s || !MU.on) return;
+      MF.src = null;
+      MF.offset = 0;
+      MU.idx = (MU.idx + 1) % SONGS.length;
+      S.song = MU.idx;
+      save();
+      songLabel();
+      mfPlay(MU.idx, 0);
+    };
+    MF.src = s;
+    MF.startAt = AC.currentTime - off;
+    s.start(0, off);
+  });
+}
+function synthGo() {
+  MU.loop = 0;
+  muLoad();
+  MU.base = AC.currentTime + 0.15;
+  MU.gain.gain.cancelScheduledValues(AC.currentTime);
+  MU.gain.gain.setValueAtTime(0.5, AC.currentTime);
+  MU.timer = setInterval(muTick, 90);
+  muTick();
+}
 function musicStart() {
   if (MU.on) {
     acWake();
     return;
   }
-  if (S.mute || S.music === false || document.hidden) return;
+  if (S.mute || S.music === false || document.hidden || vol("mvol", 0.85) === 0) return;
   try {
     muInit();
-    if (AC.state === "suspended") AC.resume();
+    if (AC.state === "suspended" && AC.resume) AC.resume();
     MU.idx = (S.song || 0) % SONGS.length;
-    MU.loop = 0;
-    muLoad();
-    MU.base = AC.currentTime + 0.15;
-    MU.gain.gain.cancelScheduledValues(AC.currentTime);
-    MU.gain.gain.setValueAtTime(0.5, AC.currentTime);
     MU.on = true;
-    MU.timer = setInterval(muTick, 90);
-    muTick();
+    if (!MU.fv) {
+      MU.fv = AC.createGain();
+      MU.fv.gain.value = 0.75;
+      MU.fv.connect(MU.vol);
+    }
+    if (MF.fail) synthGo();
+    else {
+      songLabel();
+      mfPlay(MU.idx, MF.idx === MU.idx ? MF.offset : 0);
+    }
   } catch (e) {
   }
 }
@@ -968,6 +1039,17 @@ function musicStop() {
   if (!MU.on) return;
   MU.on = false;
   clearInterval(MU.timer);
+  MF.tok++;
+  if (MF.src) {
+    try {
+      const s = MF.src;
+      MF.src = null;
+      MF.offset = (AC.currentTime - MF.startAt) % (s.buffer.duration || 1);
+      s.onended = null;
+      s.stop(0);
+    } catch (e) {
+    }
+  }
   try {
     const t = AC.currentTime;
     MU.gain.gain.setValueAtTime(MU.gain.gain.value, t);
@@ -1007,6 +1089,7 @@ function musicSkip() {
   S.song = MU.idx;
   save();
   musicStop();
+  MF.offset = 0;
   musicStart();
   const el = document.getElementById("songnow");
   if (el) el.textContent = "♪ " + SONGS[MU.idx].name;
