@@ -1,5 +1,5 @@
 // cache-first so the app works offline once opened
-const C = "wsc-review-6af8f68d";
+const C = "wsc-review-c1d4e1b3";
 const FILES = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/favicon-32.png"];
 const M = "wsc-music-1"; // songs survive app updates
 self.addEventListener("install", e => { self.skipWaiting(); e.waitUntil(caches.open(C).then(c => c.addAll(FILES))); });
