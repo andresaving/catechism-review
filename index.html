@@ -261,6 +261,8 @@ h1 .v{color:var(--violet)}
 .typetext.hidden .ch.hid.cur{background:var(--yellow);border-bottom-color:var(--ink)}
 .typetext.hidden .ch.hid.peek{color:var(--violet)}
 .typetext .ch.sp{padding:0 .08em}
+.typetext .ch.given,.typetext .ch.given.ok{color:var(--ink-soft);background:none;text-decoration:none;opacity:.8}
+.memlv{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 10px;font-family:var(--f-label);font-size:12px;letter-spacing:.12em;text-transform:uppercase}
 .typein{width:100%;font-family:var(--f-body);font-size:20px;padding:10px 12px;border:var(--bd) solid var(--ink);background:var(--paper-hi);box-shadow:var(--sh-sm);border-radius:0;color:var(--ink)}
 .typepanel{cursor:text}
 .protog[aria-pressed="true"]{background:var(--violet);color:var(--paper-hi)}
@@ -480,7 +482,7 @@ const CHAPTERS = [{id:"all",label:"Everything",from:1,to:NQ}].concat(
 const GAMES = [
   {id:"battle",name:"Boss Battle",    how:"Every right answer is a giant blow. One miss and the fight fades. Try again!", tag:"Sudden death", feature:true},
   {id:"typeit",name:"Type It Out",    how:"Type the whole answer. Watch your speed climb.", tag:"Typing", feature:true},
-  {id:"memtype",name:"Memory Type",   how:"The answer is hidden. Type it from memory.",    tag:"Typing"},
+  {id:"memtype",name:"Memory Type",   how:"Some words are hidden. Type them from memory. Easy hides a quarter, Medium half, Hard three quarters.",    tag:"Typing"},
   {id:"drop",  name:"Word Drop",      how:"Drag the right words into the gaps.",           tag:"Drag"},
   {id:"fill",  name:"Fill It In",     how:"Type the missing word. First letter's a freebie.", tag:"Type"},
   {id:"match", name:"Match Up",       how:"Pair each question with its answer.",            tag:"Tap pairs"},
@@ -1195,14 +1197,14 @@ function Swap(){
 function clip(text, n=230){ if(text.length<=n) return {t:text, cut:false};
   const s=text.slice(0,n); const k=Math.max(s.lastIndexOf(";"), s.lastIndexOf(","), s.lastIndexOf(":"));
   return {t:(k>60?s.slice(0,k):s.slice(0,s.lastIndexOf(" "))), cut:true}; }
-function typer(target, {hidden=false, onDone, lock=null, onMove=null, onKey=null, pro=S.pro}){
+function typer(target, {hidden=false, onDone, lock=null, onMove=null, onKey=null, pro=S.pro, given=null}){
   const chars=[...target]; let pos=0, errors=0, assisted=0, started=0, wrongHere=0, typed=0;
-  const skip = c => (!pro && !/[A-Za-z0-9 ]/.test(c)) || !!(lock && lock(c));
+  const skip = (c,i) => !!(given && given[i]) || (!pro && !/[A-Za-z0-9 ]/.test(c)) || !!(lock && lock(c));
   const p=$("p",{class:"typetext"+(hidden?" hidden":"")});
-  const spans=chars.map(c=>{ const s=$("span",{class:"ch"+(c===" "?" sp":"")+(hidden&&/[A-Za-z0-9]/.test(c)?" hid":"")+(lock&&/[A-Za-z0-9]/.test(c)&&lock(c)?" lockch":"")},c); p.append(s); return s; });
+  const spans=chars.map((c,i)=>{ const s=$("span",{class:"ch"+(c===" "?" sp":"")+(given&&given[i]?" given":"")+(hidden&&!(given&&given[i])&&/[A-Za-z0-9]/.test(c)?" hid":"")+(lock&&/[A-Za-z0-9]/.test(c)&&lock(c)?" lockch":"")},c); p.append(s); return s; });
   const inp=$("input",{class:"typein",id:"typein-"+Math.random().toString(36).slice(2,7),autocomplete:"off",autocapitalize:"off",autocorrect:"off",spellcheck:"false",enterkeyhint:"next","aria-label":"Type here",placeholder:"Tap here and type…"});
   function cursor(){ spans.forEach(s=>s.classList.remove("cur")); if(spans[pos]) spans[pos].classList.add("cur"); onMove&&onMove(chars[pos], pos, chars.length); }
-  function autoskip(){ while(pos<chars.length && skip(chars[pos])){ spans[pos].classList.add("ok","auto"); spans[pos].classList.remove("hid"); pos++; } }
+  function autoskip(){ while(pos<chars.length && skip(chars[pos],pos)){ spans[pos].classList.add("ok","auto"); spans[pos].classList.remove("hid"); pos++; } }
   function advance(assist){ spans[pos].classList.remove("hid","bad","peek"); spans[pos].classList.add(assist?"help":"ok"); pos++; wrongHere=0; autoskip(); cursor();
     if(pos>=chars.length){ inp.blur(); inp.disabled=true; onDone({errors, assisted, typed, secs:(Date.now()-started)/1000, len:chars.length}); } }
   function feed(c){
@@ -1258,21 +1260,38 @@ function TypeItOut(){
 }
 
 /* ---------- Memory Type ---------- */
+const MEMLV=[{id:"easy",label:"Easy",f:.25,tip:"a quarter of the words hidden"},{id:"med",label:"Medium",f:.5,tip:"half the words hidden"},{id:"hard",label:"Hard",f:.75,tip:"three quarters hidden"}];
+/* char mask of words left showing: hide frac of the words, the important ones first */
+function memMask(item, text, frac){
+  const toks=tokens(text), wi=[]; toks.forEach((t,i)=>{ if(t.word) wi.push(i); });
+  const {strong,weak}=keyIdx({q:item.q,a:text}), rank=shuffle(strong).concat(shuffle(weak)), seen=new Set(rank);
+  shuffle(wi.filter(i=>!seen.has(i))).forEach(i=>rank.push(i));
+  const hide=new Set(rank.slice(0,Math.max(1,Math.round(wi.length*frac))));
+  const given=[]; let prevHidden=false;
+  toks.forEach((t,i)=>{ const len=[...t.raw].length;
+    if(t.space){ let j=i+1; while(j<toks.length&&!toks[j].word&&!toks[j].plain) j++;
+      const nextHidden=j<toks.length&&hide.has(j); for(let k=0;k<len;k++) given.push(!(prevHidden&&nextHidden)); return; }
+    if(t.word){ const h=hide.has(i); prevHidden=h; for(const _ of t.pre) given.push(true); for(const _ of t.word) given.push(!h); for(const _ of t.post) given.push(true); return; }
+    prevHidden=false; for(let k=0;k<len;k++) given.push(true); });
+  return given;
+}
 function MemoryType(){
   const items=pick(3); pips(3); let idx=0; G.bar.append(proToggle());
+  const lv=()=>MEMLV.find(x=>x.id===S.memLv)||MEMLV[1];
   function round(){
     if(idx>=items.length) return finish();
     setPip(idx,"now");
-    const item=items[idx], c=clip(item.a);
-    const msg=$("div",{class:"msg"},"Miss a letter 3 times and the word peeks out.");
-    const ty=typer(c.t,{hidden:true,onDone:r=>{
+    const item=items[idx], c=clip(item.a), L=lv();
+    const msg=$("div",{class:"msg"},"Type the missing words. Miss a letter 3 times and the word peeks out.");
+    const ty=typer(c.t,{hidden:true,given:memMask(item,c.t,L.f),onDone:r=>{
       const ok=r.assisted<=2 && r.errors<=6; record(item,ok); setPip(idx,ok?"ok":"no");
       msg.className="msg "+(ok?"ok":"no"); msg.textContent= ok ? (r.errors+r.assisted===0?"Flawless from memory!":"You remembered it!") : "You finished it! Practice this one again soon.";
       act.replaceChildren(nextBtn(idx===items.length-1?"Finish":"Next →",()=>{idx++; round();}), hearBtn(item.q+" "+item.a)||"");
     }});
+    const lvRow=$("div",{class:"memlv"},$("span",{},"Hidden:"), ...MEMLV.map(x=>$("button",{class:"chip","aria-pressed":x.id===L.id?"true":"false",title:x.tip,onclick:()=>{ if(x.id===L.id) return; S.memLv=x.id; save(); round(); }},x.label)));
     const act=$("div",{class:"actions"},$("button",{class:"btn alt",onclick:()=>{ty.hint(); ty.focus();}},"Hint a letter"));
-    const panel=$("div",{class:"apanel typepanel",onclick:()=>ty.focus()},$("span",{class:"alabel"},c.cut?"Type it from memory · first part":"Type it from memory"),ty.text);
-    G.stage.replaceChildren(qPanel(item), panel, ty.input, msg, act);
+    const panel=$("div",{class:"apanel typepanel",onclick:()=>ty.focus()},$("span",{class:"alabel"},(c.cut?"Fill in the missing words · first part":"Fill in the missing words")+" · "+L.tip),ty.text);
+    G.stage.replaceChildren(lvRow, qPanel(item), panel, ty.input, msg, act);
     setTimeout(ty.focus,60);
   }
   round();
