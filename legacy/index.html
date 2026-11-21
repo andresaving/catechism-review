@@ -1151,7 +1151,36 @@ document.addEventListener("visibilitychange", () => {
   else musicStart();
 });
 const canSpeak = "speechSynthesis" in window;
-function say(text) {
+const VBASE = (location.pathname.indexOf("/legacy") >= 0 ? "../" : "") + "voice/" + CATID + "/";
+const VMAP = {};
+WSC.forEach((i) => {
+  VMAP[i.q + " " + i.a] = i.n;
+});
+const VO = { src: null, tok: 0, buf: {} };
+function duck(on) {
+  try {
+    if (MU.fv) {
+      const t = AC.currentTime;
+      MU.fv.gain.cancelScheduledValues(t);
+      MU.fv.gain.setTargetAtTime(on ? 0.2 : 0.75, t, 0.12);
+    }
+  } catch (e) {
+  }
+}
+function voStop() {
+  VO.tok++;
+  if (VO.src) {
+    try {
+      VO.src.onended = null;
+      VO.src.stop(0);
+    } catch (e) {
+    }
+    VO.src = null;
+    duck(false);
+  }
+}
+function tts(text) {
+  if (!canSpeak) return;
   try {
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
@@ -1160,8 +1189,61 @@ function say(text) {
   } catch (e) {
   }
 }
+function voPlay(b) {
+  const s = AC.createBufferSource();
+  s.buffer = b;
+  s.connect(AC.destination);
+  s.onended = () => {
+    if (VO.src === s) {
+      VO.src = null;
+      duck(false);
+    }
+  };
+  VO.src = s;
+  duck(true);
+  s.start(0);
+}
+function say(text) {
+  voStop();
+  try {
+    if (canSpeak) speechSynthesis.cancel();
+  } catch (e) {
+  }
+  const n = VMAP[text];
+  if (!n || S.mute) return tts(text);
+  try {
+    acUnlock();
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    acWake();
+  } catch (e) {
+    return tts(text);
+  }
+  if (VO.buf[n]) return voPlay(VO.buf[n]);
+  const tok = VO.tok, x = new XMLHttpRequest();
+  x.open("GET", VBASE + n + ".m4a");
+  x.responseType = "arraybuffer";
+  const fail = () => {
+    if (tok === VO.tok) tts(text);
+  };
+  x.onload = () => {
+    if (x.status >= 400 || !x.response) return fail();
+    try {
+      const ok = (b) => {
+        VO.buf = {};
+        VO.buf[n] = b;
+        if (tok === VO.tok) voPlay(b);
+      }, pr = AC.decodeAudioData(x.response, ok, fail);
+      if (pr && pr.catch) pr.catch(() => {
+      });
+    } catch (e) {
+      fail();
+    }
+  };
+  x.onerror = fail;
+  x.send();
+}
 function hearBtn(text) {
-  return canSpeak ? $("button", { class: "hear", onclick: () => say(text) }, icon("hear"), "Hear it") : null;
+  return canSpeak || VMAP[text] ? $("button", { class: "hear", onclick: () => say(text) }, icon("hear"), "Hear it") : null;
 }
 const fx = document.getElementById("fx"), ctx = fx.getContext("2d");
 function confetti() {
