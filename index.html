@@ -578,12 +578,15 @@ function icon(id, cls="gico"){
 
 /* ================= sound + speech + confetti ================= */
 let AC=null;
-function tone(freqs, type="square", dur=.09){
+let SFX=null; // lo-fi: soft waves + warm low-pass, no square/saw buzz
+function tone(freqs, type="sine", dur=.09){
   if(S.mute) return;
   try{ AC=AC||new (window.AudioContext||window.webkitAudioContext)();
-    freqs.forEach((f,i)=>{ const o=AC.createOscillator(), g=AC.createGain(); o.type=type; o.frequency.value=f;
-      const t=AC.currentTime+i*dur; g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.08,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+dur*1.6);
-      o.connect(g).connect(AC.destination); o.start(t); o.stop(t+dur*1.8); });
+    if(!SFX){ SFX=AC.createBiquadFilter(); SFX.type="lowpass"; SFX.frequency.value=1800; SFX.Q.value=.5; SFX.connect(AC.destination); }
+    const w = type==="sine" ? "sine" : "triangle";
+    freqs.forEach((f,i)=>{ const o=AC.createOscillator(), g=AC.createGain(); o.type=w; o.frequency.value=f>1000?f/2:f;
+      const t=AC.currentTime+i*dur, d=Math.max(dur,.05); g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.055,t+.015); g.gain.exponentialRampToValueAtTime(.0001,t+d*2.2);
+      o.connect(g); g.connect(SFX); o.start(t); o.stop(t+d*2.4); });
   }catch(e){}
 }
 const ding = () => tone([660,880,1320],"square",.07);
@@ -627,20 +630,26 @@ const MU={on:false,idx:0,loop:0,timer:null,base:0,cur:null,qi:0,q:null,gain:null
 try{ if(navigator.audioSession) navigator.audioSession.type="playback"; }catch(e){}
 function acWake(){ try{ if(AC && AC.state!=="running") AC.resume(); }catch(e){} }
 function muInit(){ AC=AC||new (window.AudioContext||window.webkitAudioContext)();
-  if(!MU.gain){ MU.gain=AC.createGain(); MU.gain.gain.value=.5; MU.gain.connect(AC.destination);
+  if(!MU.lp){ MU.lp=AC.createBiquadFilter(); MU.lp.type="lowpass"; MU.lp.frequency.value=1400; MU.lp.Q.value=.7; MU.lp.connect(AC.destination);
+    MU.lfo=AC.createOscillator(); MU.lfo.frequency.value=.35; MU.wob=AC.createGain(); MU.wob.gain.value=7; MU.lfo.connect(MU.wob); MU.lfo.start(); }
+  if(!MU.gain){ MU.gain=AC.createGain(); MU.gain.gain.value=.5; MU.gain.connect(MU.lp);
     const N=32, re=new Float32Array(N), im=new Float32Array(N), d=.25; for(let n=1;n<N;n++){ re[n]=Math.sin(2*Math.PI*n*d)/(Math.PI*n); im[n]=(1-Math.cos(2*Math.PI*n*d))/(Math.PI*n); }
     MU.pulse=AC.createPeriodicWave(re,im);
     const len=AC.sampleRate*.05, buf=AC.createBuffer(1,len,AC.sampleRate), ch=buf.getChannelData(0); for(let i=0;i<len;i++) ch[i]=Math.random()*2-1; MU.noise=buf; } }
 function muNote(kind,f,t,dur){
   const g=AC.createGain(); g.connect(MU.gain);
-  if(kind==="hat"){ const s=AC.createBufferSource(); s.buffer=MU.noise; const hp=AC.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=7000;
-    s.connect(hp).connect(g); g.gain.setValueAtTime(f,t); g.gain.exponentialRampToValueAtTime(.0001,t+.04); s.start(t); s.stop(t+.05); return; }
-  const o=AC.createOscillator(); if(kind==="lead") o.setPeriodicWave(MU.pulse); else o.type="triangle"; o.frequency.value=f; o.connect(g);
-  const v=kind==="lead"?.07:.11, end=t+Math.max(.06,dur*(kind==="lead"?.9:.7));
-  g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(v,t+.008); g.gain.setValueAtTime(v*.8,Math.max(t+.01,end-.03)); g.gain.exponentialRampToValueAtTime(.0001,end);
-  o.start(t); o.stop(end+.02);
+  if(kind==="hat"){ const s=AC.createBufferSource(); s.buffer=MU.noise; const hp=AC.createBiquadFilter(); 
+    hp.type="bandpass"; hp.frequency.value=3200; hp.Q.value=.6;
+    s.connect(hp); hp.connect(g); g.gain.setValueAtTime(f*.35,t); g.gain.exponentialRampToValueAtTime(.0001,t+.05); s.start(t); s.stop(t+.06); return; }
+  // lead = soft electric-piano (sine + quiet octave), bass = round sine; both drift a few cents like old tape
+  const o=AC.createOscillator(); o.type="sine"; o.frequency.value=f; o.connect(g);
+  if(MU.wob && o.detune) MU.wob.connect(o.detune);
+  let o2=null; if(kind==="lead"){ o2=AC.createOscillator(); o2.type="triangle"; o2.frequency.value=f*2; const g2=AC.createGain(); g2.gain.value=.18; o2.connect(g2); g2.connect(g); if(MU.wob && o2.detune) MU.wob.connect(o2.detune); }
+  const v=kind==="lead"?.085:.12, end=t+Math.max(.12,dur*(kind==="lead"?.95:.85));
+  g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(v,t+.03); g.gain.exponentialRampToValueAtTime(v*.5,Math.max(t+.05,end-.06)); g.gain.exponentialRampToValueAtTime(.0001,end+.12);
+  o.start(t); o.stop(end+.15); if(o2){ o2.start(t); o2.stop(end+.15); }
 }
-function muLoad(){ const sg=SONGS[MU.idx]; MU.cur=compileSong(sg); MU.spb=60/sg.bpm;
+function muLoad(){ const sg=SONGS[MU.idx]; MU.cur=compileSong(sg); MU.spb=60/(sg.bpm*.85); // lo-fi: a little slower
   MU.q=MU.cur.mel.map(e=>({k:"lead",...e})).concat(MU.cur.bass.map(e=>({k:"bass",...e})));
   for(let b=0;b<MU.cur.total;b++) MU.q.push({k:"hat",t:b,d:0,v:((b-sg.pickup)%sg.bar===0)?.05:.022});
   MU.q.sort((x,y)=>x.t-y.t); MU.qi=0; const el=document.getElementById("songnow"); if(el) el.textContent="♪ "+sg.name; }
