@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Catechism">
-<title>Catechism Review</title>
+<meta name="apple-mobile-web-app-title" content="CateKids">
+<title>CateKids</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png?v=2">
 <link rel="icon" href="icons/favicon-32.png" sizes="32x32">
@@ -815,7 +815,7 @@ function home(){
   const open=WSC.filter(inRange), mastered=open.filter(it=>lvl(it.n)===5).length;
   const tab=S.tab||"play";
   const top=$("header",{class:"top2"},
-    $("h1",{},"Catechism ",$("span",{class:"v"},"Review")),
+    $("h1",{},"Cate",$("span",{class:"v"},"Kids")),
     $("button",{class:"catpill",onclick:()=>{UI.cat=true; UI.snd=false; home();}},CAT.short," ▾"),
     $("div",{class:"stats2"},
       $("span",{},$("b",{},String(S.stars))," stars"),

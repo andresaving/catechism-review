@@ -1,7 +1,7 @@
 {
-  "name": "Catechism Review",
-  "short_name": "Catechism",
-  "description": "Games for kids to learn the Westminster Shorter Catechism.",
+  "name": "CateKids",
+  "short_name": "CateKids",
+  "description": "Games for kids to learn the catechism: Westminster, Heidelberg, Luther, Baptist and more.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

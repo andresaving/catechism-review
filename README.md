@@ -1,4 +1,4 @@
-# Catechism Review
+# CateKids
 
 Free games for kids to learn the **Westminster Shorter Catechism** (all 107
 questions): Boss Battle, typing practice, Word Drop, Fill It In, Match Up,
