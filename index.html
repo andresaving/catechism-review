@@ -411,9 +411,15 @@ h1 .v{color:var(--violet)}
 .tx-fade{animation:tx-fade .16s var(--ease-out) backwards}
 .modal.tx-open{animation:tx-fade .2s var(--ease-out) backwards}
 .modal.tx-open .inner{animation:tx-sheet .28s var(--ease-out) backwards}
+/* closing: the sheet drops back the way it came, a little quicker than it opened */
+@keyframes tx-fade-out{to{opacity:0}}
+@keyframes tx-sheet-out{to{opacity:0;transform:translateY(16px) scale(.97)}}
+.modal.tx-close{animation:tx-fade-out .2s var(--ease-out) forwards;pointer-events:none}
+.modal.tx-close .inner{animation:tx-sheet-out .2s var(--ease-out) forwards}
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
   .tx-fwd,.tx-back,.tx-up,.tx-fade,.modal.tx-open,.modal.tx-open .inner{animation:tx-fade .2s ease-out backwards!important}
+  .modal.tx-close{animation:tx-fade-out .2s ease-out forwards!important}
 }
 
 /* ---------- home v2: one calm screen ---------- */
@@ -839,6 +845,14 @@ function txStage(el){
   return el;
 }
 let NAV=null, LASTTAB=null, OPENSHEET=null;
+/* play the sheet's exit, then do what closing means (re-render home, or just remove it) */
+function closeSheet(m, after){
+  if(m.classList.contains("tx-close")) return;
+  m.classList.remove("tx-open"); m.classList.add("tx-close");
+  let done=false; const fin=()=>{ if(done) return; done=true; after(); };
+  m.addEventListener("animationend",e=>{ if(e.target===m) fin(); });
+  setTimeout(fin,320);
+}
 function home(){
   const nav=NAV; NAV=null;
   app.innerHTML="";
@@ -899,18 +913,19 @@ function home(){
   if(UI.cat){
     const list=[["wsc","Westminster Shorter Catechism","Presbyterian, 1647. The classic.",WSC_SHORTER.length]].concat(
       ["ycc","heid","luth","keach","wlc"].map(id=>[id,CATS[id].name,CATS[id].blurb,CATS[id].items.length]));
-    const m=$("div",{class:"modal",onclick:e=>{if(e.target===m){UI.cat=false; home();}}},
+    const m=$("div",{class:"modal",onclick:e=>{if(e.target===m) shut();}},
       $("div",{class:"inner sheet2"},
         $("h2",{class:"sheeth"},"Which catechism?"),
         $("div",{class:"catlist"}, list.map(([id,name,blurb,n])=>$("button",{class:"catopt","aria-pressed":id===CATID?"true":"false",
-          onclick:()=>{ if(id===CATID){UI.cat=false; home();} else switchCat(id); }},
+          onclick:()=>{ if(id===CATID) shut(); else switchCat(id); }},
           $("b",{},name),$("small",{},n+" questions · "+blurb)))),
         $("p",{class:"tabnote"},"Each catechism keeps its own stars on the map."),
-        $("div",{class:"actions"},$("button",{class:"btn vi",onclick:()=>{UI.cat=false; home();}},"Done"))));
+        $("div",{class:"actions"},$("button",{class:"btn vi",onclick:()=>shut()},"Done"))));
+    const shut=()=>closeSheet(m,()=>{UI.cat=false; home();});
     openSheet(m); app.append(m);
   }
   if(UI.range){
-    const m=$("div",{class:"modal",onclick:e=>{if(e.target===m){UI.range=false; home();}}},
+    const m=$("div",{class:"modal",onclick:e=>{if(e.target===m) shut();}},
       $("div",{class:"inner sheet2"},
         $("h2",{class:"sheeth"},"How far have you studied?"),
         maxSlider(),
@@ -921,7 +936,8 @@ function home(){
           return $("button",{class:"chip"+(c.id==="weak"?" weak":""),"aria-pressed":on?"true":"false",
             onclick:()=>{S.chapter=c.id; save(); home();}}, c.label, $("small",{}, c.id==="weak"?`(${count})`:(sp.from===sp.to?`Q${sp.from}`:`Q${sp.from}–${sp.to}`)));
         })),
-        $("div",{class:"actions"},$("button",{class:"btn vi",onclick:()=>{UI.range=false; home();}},"Done"))));
+        $("div",{class:"actions"},$("button",{class:"btn vi",onclick:()=>shut()},"Done"))));
+    const shut=()=>closeSheet(m,()=>{UI.range=false; home();});
     openSheet(m); app.append(m);
   }
   OPENSHEET=sheet;
@@ -945,11 +961,11 @@ function maxSlider(){
 }
 function chapterOf(n){ const c=CHAPTERS.find(c=>c.id!=="all"&&c.id!=="weak"&&n>=c.from&&n<=c.to); return c?c.label:""; }
 function study(it){
-  const m=$("div",{class:"modal",onclick:e=>{if(e.target===m) m.remove();}},
+  const m=$("div",{class:"modal",onclick:e=>{if(e.target===m) closeSheet(m,()=>m.remove());}},
     $("div",{class:"inner"},
       $("div",{class:"qpanel"},$("span",{class:"qnum"},"Q. "+it.n),$("p",{class:"qtext"},it.q)),
       $("div",{class:"apanel"},$("span",{class:"alabel"},"Answer · level "+lvl(it.n)+" of 5"),$("p",{class:"atext"},it.a),hearBtn(it.q+" "+it.a)),
-      $("div",{class:"actions"},$("button",{class:"btn",onclick:()=>m.remove()},"Got it"))));
+      $("div",{class:"actions"},$("button",{class:"btn",onclick:()=>closeSheet(m,()=>m.remove())},"Got it"))));
   m.classList.add("tx-open"); document.body.append(m); m.querySelector(".btn").focus();
 }
 
