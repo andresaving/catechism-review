@@ -303,16 +303,16 @@ h1 .v{color:var(--violet)}
 .built .piece.w{padding:3px 7px 1px}
 .numopts{display:flex;gap:10px;flex-wrap:wrap}
 .numopts .opt{min-width:72px;justify-content:center;font-family:var(--f-display);font-size:26px}
-.duelfs{position:fixed;top:0;right:0;bottom:0;left:0;inset:0;z-index:60;display:grid;grid-template-rows:1fr 1fr;background:var(--ink);gap:4px;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+.duelfs{position:fixed;top:0;right:0;bottom:0;left:0;inset:0;z-index:60;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:100%;background:var(--ink);gap:4px;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
 .duelfs .dhalf{box-shadow:none;border:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px;gap:8px}
-.duelfs .dhalf.flip{transform:rotate(180deg)}
+.built .piece.ghost{visibility:hidden}
 .duelfs .qpanel{padding:10px 14px} .duelfs .qtext{font-size:20px;font-size:clamp(18px,2.6vh,24px)}
 .duelfs .dhead{align-items:center;gap:10px} .duelfs .dvs{font-family:var(--f-display);font-size:26px;margin-left:auto}
 .dquit{font-family:var(--f-label);font-size:12px;letter-spacing:.1em;text-transform:uppercase;background:none;border:2px solid var(--ink);padding:4px 8px}
 .dfoot{display:flex;gap:10px;align-items:center;flex-wrap:wrap} .dfoot .msg{margin:0}
 .noscroll,.noscroll body{overflow:hidden}
 .duel{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
-@media (max-width:640px){.duel{grid-template-columns:1fr}}
+
 .dside{border:var(--bd) solid var(--ink);box-shadow:var(--sh-sm);background:var(--paper-hi);padding:12px;display:flex;flex-direction:column;gap:10px;position:relative;touch-action:manipulation}
 .dside.p2{background:#ece8f6}
 .dside .dhead{display:flex;justify-content:space-between;align-items:baseline}
@@ -545,7 +545,7 @@ const GAMES = [
   { id: "blitz", name: "Lightning Round", how: "60 seconds. How many can you get?", tag: "Timed" },
   { id: "gauntlet", name: "The Gauntlet", how: "Q1, Q2, Q3… in order. Put the word soup back together. Three slips on one answer and you're knocked back 5 questions.", tag: "How far?", feature: true },
   { id: "run", name: "Word Run", how: "Three lanes come at you. Steer into the next word of the answer. Dodge the fakes! Set the speed from Stroll to Sprint.", tag: "Runner", feature: true },
-  { id: "duel", name: "Sibling Duel", how: "Two players, one iPad. Same question, race to build it first. A wrong tap freezes you.", tag: "2 players" },
+  { id: "duel", name: "Dueling Disciples", how: "Two players, one iPad. Same question, race to build it first. A wrong tap freezes you.", tag: "2 players" },
   { id: "flip", name: "Flip It", how: "You get the answer. Which question was it? Then guess its number.", tag: "Reverse" },
   { id: "swap", name: "Spot the Swap", how: "One word might be wrong. Find it!", tag: "Detective" },
   { id: "say", name: "Say It", how: "Just the first letters. Say it out loud.", tag: "Recite" },
@@ -3477,7 +3477,7 @@ function Duel() {
       "div",
       { class: "apanel" },
       $("span", { class: "alabel" }, "How it works"),
-      $("p", { class: "atext" }, "Lay the iPad flat between you and sit at opposite ends. The screen splits in two, one half facing each of you. Same question, your own pieces. Build the answer in order. First one done wins the point. A wrong tap freezes you for 2 seconds. First to 5 wins!")
+      $("p", { class: "atext" }, "Sit side by side. The screen splits down the middle, left half for one of you and right half for the other. Same question, your own pieces. Build the answer in order. First one done wins the point. A wrong tap freezes you for 2 seconds. First to 5 wins!")
     ),
     ...pickPlayers(2, "Who's dueling?", (names) => duel(names))
   );
@@ -3505,7 +3505,7 @@ function Duel() {
       let over = false;
       const sides = [0, 1].map((p) => {
         let next = 0;
-        const built = $("div", { class: "built" }), bank = $("div", { class: "pieces" }), foot = $("div", { class: "dfoot" });
+        const built = $("div", { class: "built" }, ...parts.map((t) => $("span", { class: "piece ghost", "aria-hidden": "true" }, t))), bank = $("div", { class: "pieces" }), foot = $("div", { class: "dfoot" });
         const quit = $("button", { class: "dquit", "aria-label": "End the duel" }, "✕ End");
         quit.addEventListener("click", () => {
           close();
@@ -3513,7 +3513,7 @@ function Duel() {
         });
         const el = $(
           "div",
-          { class: "dside dhalf" + (p ? " p2 flip" : "") },
+          { class: "dside dhalf" + (p ? " p2" : "") },
           $("div", { class: "dhead" }, $("span", { class: "dname" }, names[p]), $("span", { class: "dvs" }, "".concat(score[p], " – ").concat(score[1 - p])), quit),
           qPanel(item),
           built,
@@ -3530,7 +3530,7 @@ function Duel() {
             if (pc.i === next || parts[pc.i] === parts[next]) {
               b.disabled = true;
               b.classList.add("spent");
-              built.append($("span", { class: "piece pop" }, parts[next]));
+              built.children[next].replaceWith($("span", { class: "piece pop" }, parts[next]));
               next++;
               tone([p ? 440 + next * 50 : 600 + next * 50], "square", 0.04);
               if (next === parts.length) win(p);
@@ -3564,7 +3564,7 @@ function Duel() {
           champ(p);
         }, 1400));
       }
-      fs.replaceChildren(sides[1], sides[0]);
+      fs.replaceChildren(sides[0], sides[1]);
     }
     function champ(p) {
       G.stage.replaceChildren($(
