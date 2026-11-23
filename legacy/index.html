@@ -38,6 +38,7 @@
   --bd:3px; --sh:6px 6px 0 var(--ink); --sh-sm:3px 3px 0 var(--ink);
   --ghost:6px 6px 0 var(--ink), 10px 9px 0 rgba(212,77,138,.45);
   --snap:cubic-bezier(.25,.9,.3,1);
+  --ease-out:cubic-bezier(.23,1,.32,1);
   color-scheme:light;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -398,7 +399,22 @@ h1 .v{color:var(--violet)}
 @keyframes fadein{from{opacity:0}to{opacity:1}}
 .mist{font-family:var(--f-display);font-size:64px;font-size:clamp(40px,10vw,64px);color:var(--steel-dk);letter-spacing:.04em;text-shadow:3px 3px 0 var(--paper-hi)}
 .foot{text-align:center;font-size:11px;letter-spacing:.32em;font-weight:600;color:var(--ink-soft)}
-@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* transitions: screens slide the way you are going, each new question rises in */
+@keyframes tx-fwd{from{opacity:0;transform:translateX(28px)}}
+@keyframes tx-back{from{opacity:0;transform:translateX(-28px)}}
+@keyframes tx-up{from{opacity:0;transform:translateY(10px)}}
+@keyframes tx-fade{from{opacity:0}}
+@keyframes tx-sheet{from{opacity:0;transform:translateY(16px) scale(.97)}}
+.tx-fwd{animation:tx-fwd .26s var(--ease-out) backwards}
+.tx-back{animation:tx-back .26s var(--ease-out) backwards}
+.tx-up{animation:tx-up .22s var(--ease-out) backwards}
+.tx-fade{animation:tx-fade .16s var(--ease-out) backwards}
+.modal.tx-open{animation:tx-fade .2s var(--ease-out) backwards}
+.modal.tx-open .inner{animation:tx-sheet .28s var(--ease-out) backwards}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  .tx-fwd,.tx-back,.tx-up,.tx-fade,.modal.tx-open,.modal.tx-open .inner{animation:tx-fade .2s ease-out backwards!important}
+}
 
 /* ---------- home v2: one calm screen ---------- */
 .top2{display:flex;align-items:center;gap:18px;flex-wrap:wrap;position:relative}
@@ -1322,7 +1338,36 @@ function tile(g) {
     $("span", { class: "tname" }, g.tag === "2 players" ? $("i", { class: "two" }, "2 players") : null, g.name)
   );
 }
+const TX = ["tx-fwd", "tx-back", "tx-up", "tx-fade"];
+function tx(els, kind, step) {
+  [].slice.call(els).forEach((el, i) => {
+    if (!el || el.nodeType !== 1) return;
+    el.classList.remove(...TX);
+    void el.offsetWidth;
+    el.classList.add("tx-" + kind);
+    if (step) el.style.animationDelay = Math.min(i, 4) * step + "ms";
+    const done = (e) => {
+      if (e.target !== el) return;
+      el.classList.remove("tx-" + kind);
+      el.style.animationDelay = "";
+      el.removeEventListener("animationend", done);
+    };
+    el.addEventListener("animationend", done);
+  });
+}
+function txStage(el) {
+  const rc = el.replaceChildren;
+  el.replaceChildren = function() {
+    rc.apply(this, arguments);
+    if (G && G.quick) tx(this.children, "fade");
+    else tx(this.children, "up", 40);
+  };
+  return el;
+}
+let NAV = null, LASTTAB = null, OPENSHEET = null;
 function home() {
+  const nav = NAV;
+  NAV = null;
   app.innerHTML = "";
   const open = WSC.filter(inRange), mastered = open.filter((it) => lvl(it.n) === 5).length;
   const tab = S.tab || "play";
@@ -1437,6 +1482,13 @@ function home() {
     );
   }
   app.append(top, tabs, body, $("div", { class: "foot" }, "SOLI DEO GLORIA"));
+  if (nav) tx(app.children, nav, 30);
+  else if (LASTTAB !== null && LASTTAB !== tab) tx([body], "fade");
+  LASTTAB = tab;
+  const sheet = UI.cat ? "cat" : UI.range ? "range" : null;
+  const openSheet = (m) => {
+    if (OPENSHEET !== sheet) m.classList.add("tx-open");
+  };
   if (UI.cat) {
     const list = [["wsc", "Westminster Shorter Catechism", "Presbyterian, 1647. The classic.", WSC_SHORTER.length]].concat(
       ["ycc", "heid", "luth", "keach", "wlc"].map((id) => [id, CATS[id].name, CATS[id].blurb, CATS[id].items.length])
@@ -1475,6 +1527,7 @@ function home() {
         } }, "Done"))
       )
     );
+    openSheet(m);
     app.append(m);
   }
   if (UI.range) {
@@ -1511,8 +1564,10 @@ function home() {
         } }, "Done"))
       )
     );
+    openSheet(m);
     app.append(m);
   }
+  OPENSHEET = sheet;
 }
 function maxSlider() {
   const out = $("output", { class: "maxval", for: "maxq" }, String(S.max));
@@ -1569,6 +1624,7 @@ function study(it) {
       $("div", { class: "actions" }, $("button", { class: "btn", onclick: () => m.remove() }, "Got it"))
     )
   );
+  m.classList.add("tx-open");
   document.body.append(m);
   m.querySelector(".btn").focus();
 }
@@ -1586,11 +1642,13 @@ function play(id) {
   G.bar = $("div", { class: "bar" }, $("button", { class: "back", onclick: () => {
     G.stop && G.stop();
     G = null;
+    NAV = "back";
     home();
     scrollTo(0, 0);
   } }, "← Games"), $("h2", { class: "gtitle" }, $("span", { class: "gbadge" }, icon(id)), g.name));
-  G.stage = $("div", { class: "stage" });
+  G.stage = txStage($("div", { class: "stage" }));
   app.append(G.bar, $("p", { class: "ghow" }, g.how), G.stage);
+  tx([G.bar, G.bar.nextSibling], "fwd", 30);
   scrollTo(0, 0);
   ({ battle: Battle, typeit: TypeItOut, memtype: MemoryType, drop: WordDrop, fill: FillIn, match: MatchUp, build: BuildIt, blitz: Blitz, swap: Swap, gauntlet: Gauntlet, run: WordRun, duel: Duel, flip: FlipIt, keypath: KeyPath, rain: WordRain, first: FirstLetters, race: PaceRace })[id]();
 }
@@ -1634,6 +1692,7 @@ function finish() {
       nextBtn("Play again", () => play(G.id)),
       $("button", { class: "btn alt", onclick: () => {
         G = null;
+        NAV = "back";
         home();
         scrollTo(0, 0);
       } }, "Pick another game")
@@ -2046,6 +2105,7 @@ function BuildIt() {
   round();
 }
 function Blitz() {
+  G.quick = true;
   let left = 60, timer, locked = false;
   const tEl = $("div", { class: "timer", role: "timer", "aria-live": "off" }, "60"), sc = $("div", { class: "score" }, "0");
   G.bar.append(sc, tEl);
@@ -2443,7 +2503,7 @@ function fight(f) {
     art,
     boom
   );
-  const card = $("div", { class: "stage" });
+  const card = txStage($("div", { class: "stage" }));
   const wrap = $("div", { class: "battle" }, arena, card);
   G.stage.replaceChildren(wrap);
   const used = /* @__PURE__ */ new Set();
