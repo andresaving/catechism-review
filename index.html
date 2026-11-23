@@ -218,9 +218,6 @@ h1 .v{color:var(--violet)}
 .tw.was{background:var(--yellow)}
 .fix{font-weight:700;color:var(--good)}
 
-/* say it */
-.letters{font-family:var(--f-label);font-weight:600;font-size:clamp(20px,4.6vw,28px);letter-spacing:.12em;line-height:1.6;word-spacing:.2em;margin:0;color:var(--violet-dk)}
-
 /* end screen */
 .end{position:relative;text-align:center;background:var(--paper-hi);border:var(--bd) solid var(--ink);box-shadow:var(--ghost);padding:26px 18px 22px;display:flex;flex-direction:column;align-items:center;gap:10px}
 .pow{font-family:var(--f-display);font-size:clamp(64px,16vw,110px);line-height:.9;color:var(--ink);text-shadow:4px 4px 0 var(--yellow),7px 7px 0 var(--magenta);transform:rotate(-4deg)}
@@ -484,7 +481,7 @@ const GAMES = [
   {id:"typeit",name:"Type It Out",    how:"Type the whole answer. Watch your speed climb.", tag:"Typing", feature:true},
   {id:"memtype",name:"Memory Type",   how:"Some words are hidden. Type them from memory. Easy hides a quarter, Medium half, Hard three quarters.",    tag:"Typing"},
   {id:"drop",  name:"Word Drop",      how:"Drag the right words into the gaps.",           tag:"Drag"},
-  {id:"fill",  name:"Fill It In",     how:"Type the missing word. First letter's a freebie.", tag:"Type"},
+  {id:"fill",  name:"Fill It In",     how:"Type the missing words. Easy: one word, first letter free. Medium: more words. Hard: lots of words, no free letters.", tag:"Type"},
   {id:"match", name:"Match Up",       how:"Pair each question with its answer.",            tag:"Tap pairs"},
   {id:"build", name:"Build It",       how:"Snap the answer back together in order.",        tag:"Order"},
   {id:"blitz", name:"Lightning Round",how:"60 seconds. How many can you get?",              tag:"Timed"},
@@ -493,7 +490,6 @@ const GAMES = [
   {id:"duel",  name:"Dueling Disciples",   how:"Two players, one iPad. Same question, race to build it first. A wrong tap freezes you.", tag:"2 players"},
   {id:"flip",  name:"Flip It",        how:"You get the answer. Which question was it? Then guess its number.", tag:"Reverse"},
   {id:"swap",  name:"Spot the Swap",  how:"One word might be wrong. Find it!",              tag:"Detective"},
-  {id:"say",   name:"Say It",         how:"Just the first letters. Say it out loud.",       tag:"Recite"},
   {id:"keypath",name:"Key Path",      how:"Type the answer with only the keys you've learned. The keyboard shows which finger.", tag:"Fingers", lab:true},
   {id:"rain",  name:"Word Rain",      how:"The answer falls one word at a time. Type each word before it lands.", tag:"Speed", lab:true},
   {id:"first", name:"First Letters",  how:"Words are hidden. Type just the first letter of each one, from memory.", tag:"Memory", lab:true},
@@ -607,7 +603,6 @@ const ICON = {
   build:'<rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/><rect x="8" y="3" width="8" height="8"/>',
   blitz:'<path d="M13.5 2 4 14h7l-1.5 8L19 10h-7z" fill="#11100d"/>',
   swap:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/><path d="M10.5 7.5v3.5M10.5 13.5h.01"/>',
-  say:'<rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/>',
   keypath:'<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h8.5a3.5 3.5 0 0 0 0-7h-9a3.5 3.5 0 0 1 0-7H16"/>',
   rain:'<path d="M7 15a4 4 0 1 1 .9-7.9A5 5 0 0 1 17.6 8 3.5 3.5 0 0 1 17 15z"/><path d="M8.5 18l-1 3M12.5 18l-1 3M16.5 18l-1 3"/>',
   first:'<path d="M3.5 19 8.5 5l5 14M5.3 14h6.4"/><path d="M15.5 19h5"/>',
@@ -928,7 +923,7 @@ function play(id){
   G.stage=$("div",{class:"stage"});
   app.append(G.bar,$("p",{class:"ghow"},g.how),G.stage);
   scrollTo(0,0);
-  ({battle:Battle,typeit:TypeItOut,memtype:MemoryType,drop:WordDrop,fill:FillIn,match:MatchUp,build:BuildIt,blitz:Blitz,swap:Swap,say:SayIt,gauntlet:Gauntlet,run:WordRun,duel:Duel,flip:FlipIt,keypath:KeyPath,rain:WordRain,first:FirstLetters,race:PaceRace})[id]();
+  ({battle:Battle,typeit:TypeItOut,memtype:MemoryType,drop:WordDrop,fill:FillIn,match:MatchUp,build:BuildIt,blitz:Blitz,swap:Swap,gauntlet:Gauntlet,run:WordRun,duel:Duel,flip:FlipIt,keypath:KeyPath,rain:WordRain,first:FirstLetters,race:PaceRace})[id]();
 }
 function pips(n){ G.pipEl=$("div",{class:"pips","aria-hidden":"true"},Array.from({length:n},()=>$("span",{class:"pip"}))); G.bar.append(G.pipEl); }
 function setPip(i,state){ const p=G.pipEl&&G.pipEl.children[i]; if(p) p.className="pip "+state; }
@@ -1017,18 +1012,31 @@ function WordDrop(){
 }
 
 /* ---------- 2. Fill It In ---------- */
+const FILLLV=[
+  {id:"easy",label:"Easy",  n:w=>w>25?2:1,                   free:true, tip:"one word, first letter free"},
+  {id:"med", label:"Medium",n:w=>Math.max(2,Math.round(w/9)),  free:true, tip:"a few words, first letter free"},
+  {id:"hard",label:"Hard",  n:w=>Math.max(4,Math.round(w/4)),  free:false,tip:"lots of words, no free letters"}];
+/* blanks for Fill It In: key words first, then any word of 3+ letters */
+function fillBlanks(item,k){
+  const r=chooseBlanks(item,k); if(r.pick.length>=k) return r;
+  const seen=new Set(r.pick.map(i=>norm(r.toks[i].word)));
+  shuffle(r.toks.map((t,i)=>i).filter(i=>r.toks[i].word&&r.toks[i].word.length>2)).forEach(i=>{
+    const c=norm(r.toks[i].word); if(r.pick.length<k&&!seen.has(c)){ seen.add(c); r.pick.push(i); } });
+  r.pick.sort((a,b)=>a-b); return r;
+}
 function FillIn(){
   const items=pick(6); pips(6); let idx=0;
+  const lv=()=>FILLLV.find(x=>x.id===S.fillLv)||FILLLV[0];
   function round(){
     if(idx>=items.length) return finish();
     setPip(idx,"now");
-    const item=items[idx], n=item.a.split(" ").length>25?2:1, {toks,pick:bl}=chooseBlanks(item,n);
+    const item=items[idx], L=lv(), {toks,pick:bl}=fillBlanks(item,L.n(item.a.split(" ").length));
     const ins=[]; let tries=0, done=false;
     const p=$("p",{class:"atext"});
     toks.forEach((t,i)=>{
       if(!bl.includes(i)){ p.append(t.raw); return; }
-      const w=t.word, mask=w[0]+"·".repeat(w.length-1);
-      const inp=$("input",{class:"blank",id:`fill-${idx}-${i}`,autocomplete:"off",autocapitalize:"off",autocorrect:"off",spellcheck:"false","aria-label":"missing word starting with "+w[0],placeholder:mask});
+      const w=t.word, mask=L.free?w[0]+"·".repeat(w.length-1):"·".repeat(w.length);
+      const inp=$("input",{class:"blank",id:`fill-${idx}-${i}`,autocomplete:"off",autocapitalize:"off",autocorrect:"off",spellcheck:"false","aria-label":L.free?"missing word starting with "+w[0]:"missing word, "+w.length+" letters",placeholder:mask});
       inp.style.width=(w.length+2)+"ch"; inp.dataset.ans=w;
       inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); const nx=ins[ins.indexOf(inp)+1]; if(nx&&!done) nx.focus(); else if(!done) doCheck(); else nextB&&nextB.click(); }});
       ins.push(inp); p.append(t.pre, inp, t.post);
@@ -1043,17 +1051,18 @@ function FillIn(){
       ins.forEach((x,i)=>{x.classList.remove("ok","no"); x.classList.add(good[i]?"ok":"no");});
       if(good.every(Boolean)){ end(true); return; }
       tries++;
-      if(tries<2){ msg.className="msg no"; msg.textContent="Close! Fix the red one."; buzz(); shake(p); const bad=ins.find((x,i)=>!good[i]); bad.focus(); bad.select(); return; }
+      if(tries<2){ msg.className="msg no"; msg.textContent=good.filter(x=>!x).length>1?"Close! Fix the red ones.":"Close! Fix the red one."; buzz(); shake(p); const bad=ins.find((x,i)=>!good[i]); bad.focus(); bad.select(); return; }
       ins.forEach((x,i)=>{ if(!good[i]){ x.value=x.dataset.ans; x.classList.replace("no","fixed"); }});
       end(false);
     }
     function end(ok){
       done=true; ins.forEach(x=>x.readOnly=true); record(item,ok); setPip(idx,ok?"ok":"no");
-      msg.className="msg "+(ok?"ok":"no"); msg.textContent=ok?(tries?"Got it!":"First try!"):"Here's the word. You'll get it next time.";
+      msg.className="msg "+(ok?"ok":"no"); msg.textContent=ok?(tries?"Got it!":"First try!"):(ins.length>1?"Here are the words. You'll get them next time.":"Here's the word. You'll get it next time.");
       nextB=nextBtn(idx===items.length-1?"Finish":"Next →",()=>{idx++; round();});
       act.replaceChildren(nextB, hearBtn(item.q+" "+item.a)||"");
     }
-    G.stage.replaceChildren(qPanel(item), $("div",{class:"apanel"},$("span",{class:"alabel"},"Answer · type the missing word"),p), msg, act);
+    const lvRow=$("div",{class:"memlv"},$("span",{},"Level:"), ...FILLLV.map(x=>$("button",{class:"chip","aria-pressed":x.id===L.id?"true":"false",title:x.tip,onclick:()=>{ if(x.id===L.id||done) return; S.fillLv=x.id; save(); round(); }},x.label)));
+    G.stage.replaceChildren(lvRow, qPanel(item), $("div",{class:"apanel"},$("span",{class:"alabel"},"Answer · "+(ins.length>1?"type the missing words":"type the missing word")+" · "+L.tip),p), msg, act);
     setTimeout(()=>ins[0]&&ins[0].focus({preventScroll:true}),50);
   }
   round();
@@ -1590,30 +1599,6 @@ function race(pc){
   const panel=$("div",{class:"apanel typepanel",onclick:()=>ty.focus()},$("span",{class:"alabel"},c.cut?"Type it · first part of the answer":"Type it"),ty.text);
   G.stage.replaceChildren(track, qPanel(item), panel, ty.input, msg, act);
   setTimeout(ty.focus,60);
-}
-
-/* ---------- 7. Say It ---------- */
-function SayIt(){
-  const items=pick(6); pips(6); let idx=0;
-  function round(){
-    if(idx>=items.length) return finish();
-    setPip(idx,"now");
-    const item=items[idx];
-    const letters=item.a.split(" ").map(w=>{ const m=w.match(/^([^A-Za-z]*)([A-Za-z])[A-Za-z'’-]*([^A-Za-z]*)$/); return m?m[1]+m[2]+m[3]:w; }).join(" ");
-    const box=$("div",{class:"apanel"},$("span",{class:"alabel"},"Say the whole answer out loud"),$("p",{class:"letters"},letters));
-    const act=$("div",{class:"actions"});
-    const msg=$("div",{class:"msg"},"");
-    act.append(nextBtn("Show the answer",()=>{
-      box.append($("p",{class:"atext pop",style:"margin-top:12px"},item.a), hearBtn(item.q+" "+item.a)||"");
-      msg.textContent="How did you do?"; msg.className="msg";
-      act.replaceChildren(
-        $("button",{class:"btn",onclick:()=>grade(true)},"Said it right!"),
-        $("button",{class:"btn alt",onclick:()=>grade(false)},"Not yet"));
-    }));
-    function grade(ok){ record(item,ok); setPip(idx,ok?"ok":"no"); idx++; round(); }
-    G.stage.replaceChildren(qPanel(item), box, msg, act);
-  }
-  round();
 }
 
 /* ---------- players (shared by Gauntlet + Duel) ---------- */
