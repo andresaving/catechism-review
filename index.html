@@ -270,6 +270,34 @@ h1 .v{color:var(--violet)}
 .kp .ch.lockch{color:#aeb7c8;font-weight:400}
 .tagline{background:var(--ink);color:var(--yellow);border-color:var(--ink);cursor:default}
 
+/* crossword */
+.xlist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.xpick{text-align:left;background:var(--paper-hi);border:var(--bd) solid var(--ink);box-shadow:var(--sh-sm);padding:12px 14px 10px;min-width:0}
+.xpick b{display:block;font-family:var(--f-display);font-weight:400;font-size:25px;line-height:1.05;letter-spacing:.03em}
+.xpick small{display:block;font-size:14px;margin-top:4px;color:var(--ink-soft)}
+.xpick.done{background:var(--yellow)} .xpick[disabled]{opacity:.55;box-shadow:none;border-style:dashed;cursor:default}
+.xclue{display:flex;align-items:stretch;background:var(--ink);color:var(--paper-hi)}
+.xclue p{flex:1;align-self:center;margin:0;padding:8px 6px;min-height:66px;font-family:var(--f-body);font-weight:700;font-size:18px;line-height:1.25;min-width:0}
+.xclue p b{font-family:var(--f-display);font-weight:400;color:var(--yellow);letter-spacing:.03em;margin-right:6px}
+.xclue button{flex:none;width:46px;border:0;background:transparent;color:var(--yellow);font-size:26px}
+.xgrid{position:relative;margin:0 auto;border:var(--bd) solid var(--ink);background:var(--ink);box-sizing:content-box;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.xc{position:absolute;padding:0;margin:0;border:1px solid var(--ink);border-radius:0;background:var(--paper-hi);font-family:var(--f-label);font-weight:600;text-align:center;color:var(--ink);text-transform:uppercase}
+.xc i{position:absolute;left:2px;top:1px;font-style:normal;font-weight:600;line-height:1;pointer-events:none}
+.xc.word{background:var(--violet-lt)} .xc.cur{background:var(--yellow)} .xc.ok{background:var(--good-lt)} .xc.free{color:var(--violet)} .xc.ok.word{background:#b4d9c8} .xc.ok.cur{background:var(--yellow)} .xc.no{background:var(--bad-lt);color:var(--bad)}
+.xkeys{max-width:640px;width:100%;margin:0 auto}
+.xkeys div{display:flex;justify-content:center}
+.xkeys button{flex:1 1 0;max-width:62px;min-width:0;height:46px;margin:2px;padding:0;border:2px solid var(--ink);background:var(--paper-hi);font-family:var(--f-label);font-weight:600;font-size:19px;touch-action:manipulation}
+.xkeys button:active{background:var(--yellow)} .xkeys .wide{flex:1.6 1 0;max-width:100px;font-size:15px}
+.xtools{display:flex;justify-content:center;flex-wrap:wrap;gap:10px}
+.xclues{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.xclues h3{font-family:var(--f-display);font-weight:400;font-size:26px;margin:0 0 4px;letter-spacing:.03em}
+.xclues button{display:block;width:100%;text-align:left;background:none;border:0;padding:6px 0;font-family:var(--f-body);font-size:17px;line-height:1.25}
+.xclues button b{font-family:var(--f-label);font-weight:600} .xclues button.ok{color:var(--good);text-decoration:line-through}
+.xmain .xgrid,.xmain .xside,.xside>.xkeys,.xside>.xtools,.xside>.msg{margin-top:14px} .xmain:not(.wide) .xside>.xkeys{margin-top:0} .xmain.wide{display:flex;align-items:flex-start} .xmain.wide .xgrid{flex:none;margin:0} .xmain.wide .xside{flex:1;min-width:0;margin:0 0 0 16px}
+@media (max-width:640px){.xclues,.xlist{grid-template-columns:minmax(0,1fr)} .xclue p{font-size:17px}}
+
+.xclue em{font-style:normal;font-weight:400;color:var(--violet-lt)}
+
 /* keyboard lab */
 .who{display:flex;flex-wrap:wrap;gap:10px;margin:6px 0 4px}
 .who .chip[aria-pressed=true]{background:var(--violet);color:var(--paper-hi)}
@@ -513,11 +541,16 @@ const GAMES = [
   {id:"duel",  name:"Dueling Disciples",   how:"Two players, one iPad. Same question, race to build it first. A wrong tap freezes you.", tag:"2 players"},
   {id:"flip",  name:"Flip It",        how:"You get the answer. Which question was it? Then guess its number.", tag:"Reverse"},
   {id:"swap",  name:"Spot the Swap",  how:"One word might be wrong. Find it!",              tag:"Detective"},
+  {id:"cross", name:"Crossword",      how:"Each clue is a line of an answer with a word missing. Say it, find the word, fill the squares.", tag:"Puzzle"},
   {id:"keypath",name:"Key Path",      how:"Type the answer with only the keys you've learned. The keyboard shows which finger.", tag:"Fingers", lab:true},
   {id:"rain",  name:"Word Rain",      how:"The answer falls one word at a time. Type each word before it lands.", tag:"Speed", lab:true},
   {id:"first", name:"First Letters",  how:"Words are hidden. Type just the first letter of each one, from memory.", tag:"Memory", lab:true},
   {id:"race",  name:"Pace Race",      how:"Race a ghost runner across the answer. Pick turtle, fox, cheetah or falcon.", tag:"Race", lab:true}
 ];
+
+/* ten crosswords on the Westminster Shorter; made by Homeschool/WSC/wsc_crossword_sets.py. Word: [word, question, clue, row, col, A|D] */
+const CROSSWORDS=/*CROSSWORDS*/[{"id":"x1","name":"God & Creation","from":1,"to":11,"lv":1,"R":9,"C":12,"w":[["COUNSEL",7,"… according to the ___ of his will …",7,0,"A"],["DOMINION",10,"… with ___ over the creatures",1,1,"D"],["FOREVER",1,"… and to enjoy him ___",2,5,"D"],["PERSONS",6,"There are three ___ in the Godhead …",2,3,"D"],["ETERNAL",4,"God is a Spirit, infinite, ___, and …",5,5,"A"],["ACTIONS",11,"… all his creatures, and all their ___",0,9,"D"],["RULE",2,"… is the only ___ to direct us …",3,11,"D"],["DUTY",3,"… what ___ God requires of man",2,7,"A"],["DAYS",9,"… in the space of six ___ …",0,8,"A"]]},{"id":"x2","name":"Sin & the Fall","from":12,"to":20,"lv":1,"R":13,"C":8,"w":[["COVENANT",12,"… he entered into a ___ of life …",12,0,"A"],["GUILT",18,"… consists in the ___ of Adam's first sin …",8,7,"D"],["ESTATE",13,"… fell from the ___ wherein they were created …",7,3,"D"],["CURSE",19,"… under his wrath and ___ …",8,0,"A"],["PERFECT",12,"… upon condition of ___ obedience …",3,0,"D"],["ELECTED",20,"… ___ some to everlasting life …",4,0,"A"],["MISERY",17,"… an estate of sin and ___",1,2,"D"],["FRUIT",15,"… was their eating the forbidden ___",0,4,"D"],["GRACE",20,"… did enter into a covenant of ___ …",10,1,"A"],["FREEDOM",13,"… the ___ of their own will …",0,6,"D"]]},{"id":"x3","name":"Jesus Our Redeemer","from":21,"to":28,"lv":1,"R":14,"C":9,"w":[["REVEALING",24,"… in ___ to us, by his word and Spirit …",13,0,"A"],["SUBDUING",26,"… in ___ us to himself …",6,8,"D"],["ETERNAL",21,"… being the ___ Son of God …",7,5,"D"],["BURIED",27,"… in being ___ …",7,1,"A"],["PROPHET",23,"… executeth the offices of a ___ …",9,0,"A"],["RISING",28,"… in his ___ again from the dead …",11,1,"A"],["REDEEMER",21,"The only ___ of God's elect …",0,3,"D"],["OFFERING",25,"… in his once ___ up of himself …",4,0,"A"],["VIRGIN",22,"… in the womb of the ___ Mary …",0,1,"A"],["CROSS",27,"… the cursed death of the ___ …",2,0,"D"],["HAND",28,"… at the right ___ of God the Father …",2,6,"D"]]},{"id":"x4","name":"Salvation","from":29,"to":38,"lv":2,"R":15,"C":10,"w":[["CONVINCING",31,"… ___ us of our sin and misery …",10,0,"A"],["ACQUITTED",38,"… openly acknowledged and ___ …",6,4,"D"],["PARTAKERS",29,"We are made ___ of the redemption …",12,1,"A"],["CONSCIENCE",36,"… peace of ___ …",7,0,"A"],["PARDONETH",33,"… wherein he ___ all our sins …",14,1,"A"],["PURCHASED",29,"… the redemption ___ by Christ …",0,9,"D"],["UNITING",30,"… thereby ___ us to Christ …",2,7,"D"],["ADOPTION",34,"___ is an act of God's free grace …",0,2,"D"],["GRAVES",37,"… do rest in their ___ …",0,0,"A"],["FAITH",30,"… by working ___ in us …",4,5,"A"],["ALONE",33,"… and received by faith ___",2,0,"A"],["DIE",35,"… enabled more and more to ___ unto sin …",5,1,"A"]]},{"id":"x5","name":"God's Law","from":39,"to":50,"lv":2,"R":13,"C":13,"w":[["DISPLEASED",48,"… is much ___ with …",6,0,"A"],["NEIGHBOUR",42,"… and our ___ as ourselves",4,1,"D"],["ORDINANCES",50,"… all such religious worship and ___ …",12,0,"A"],["BONDAGE",43,"… out of the house of ___",9,1,"A"],["GRAVEN",49,"… any ___ image …",2,8,"D"],["SUMMARILY",41,"… is ___ comprehended …",3,3,"A"],["MORAL",40,"… was the ___ law",3,6,"D"],["DENYING",47,"… forbiddeth the ___ …",0,11,"D"],["WORSHIP",46,"… to ___ and glorify him accordingly",0,3,"D"],["BOUND",44,"… therefore we are ___ to keep …",1,2,"A"],["GODS",45,"… Thou shalt have no other ___ …",9,9,"D"],["MIND",42,"… and with all our ___ …",0,8,"A"],["DUTY",39,"The ___ which God requireth of man …",11,9,"A"]]},{"id":"x6","name":"Worship & the Sabbath","from":51,"to":62,"lv":2,"R":13,"C":14,"w":[["PROFANING",55,"… forbiddeth all ___ or abusing …",0,2,"A"],["NECESSITY",60,"… the works of ___ and mercy",0,9,"D"],["PROPRIETY",52,"… his ___ in us …",0,2,"D"],["GUILTLESS",53,"… will not hold him ___ …",7,5,"A"],["IDLENESS",61,"… profaning the day by ___ …",5,2,"A"],["TITLES",54,"… God's names, ___, attributes …",3,5,"A"],["BREAKERS",56,"… the ___ of this commandment …",0,13,"D"],["IMAGES",51,"… forbiddeth the worshipping of God by ___ …",7,7,"D"],["REMEMBER",57,"… ___ the sabbath day …",4,11,"D"],["RESTING",60,"… by a holy ___ all that day …",10,1,"A"],["BLESSING",62,"… and his ___ the sabbath day",12,3,"A"],["WHOLE",58,"… expressly one ___ day in seven …",2,0,"A"],["WEEKLY",59,"… to be the ___ sabbath …",2,0,"D"],["ZEAL",52,"… and the ___ he hath …",10,10,"A"]]},{"id":"x7","name":"Loving Our Neighbour","from":63,"to":81,"lv":3,"R":15,"C":13,"w":[["CONTENTMENT",80,"… full ___ with our own condition …",8,0,"A"],["NEGLECTING",65,"… forbiddeth the ___ of …",2,6,"D"],["INJURIOUS",78,"… ___ to our own or our neighbour's good name",2,1,"D"],["UNJUSTLY",69,"… the life of our neighbour ___ …",3,10,"D"],["ENDEAVOURS",68,"… all lawful ___ to preserve …",3,3,"A"],["ENVYING",81,"… ___ or grieving …",8,4,"D"],["PROMISE",66,"… a ___ of long life …",6,0,"A"],["INFERIORS",64,"… as superiors, ___, or equals",5,8,"D"],["CHASTITY",71,"… ___, in heart, speech, and behaviour",0,12,"D"],["THOUGHTS",72,"… all unchaste ___, words, and actions",14,0,"A"],["WEALTH",74,"… procuring and furthering the ___ …",1,7,"A"],["STEAL",73,"… Thou shalt not ___",13,8,"A"],["KILL",67,"… Thou shalt not ___",10,12,"D"],["COVET",79,"… Thou shalt not ___ thy neighbour's house …",0,3,"D"],["LONG",63,"… that thy days may be ___ …",1,2,"A"]]},{"id":"x8","name":"Faith, Word & Sacraments","from":82,"to":97,"lv":3,"R":15,"C":15,"w":[["APPREHENSION",87,"… ___ of the mercy of God …",9,0,"A"],["INSTITUTED",92,"… a holy ordinance ___ by Christ …",1,6,"D"],["REPENTANCE",85,"… ___ unto life …",6,1,"A"],["WASHING",94,"… the ___ with water …",2,1,"A"],["PRACTISE",90,"… ___ it in our lives",4,2,"A"],["COMFORT",89,"… building them up in holiness and ___ …",8,10,"D"],["EXAMINE",97,"… that they ___ themselves …",7,0,"D"],["HEINOUS",83,"… are more ___ in the sight of God …",8,4,"D"],["INFANTS",95,"… the ___ of such as are members …",11,8,"A"],["VIRTUE",91,"… not from any ___ in them …",13,8,"A"],["BAPTISM",93,"… ___, and the Lord's supper",6,14,"D"],["PRAYER",88,"… especially the word, sacraments, and ___ …",9,2,"D"],["REST",86,"… whereby we receive and ___ upon him alone …",14,2,"A"],["WINE",96,"… giving and receiving bread and ___ …",1,9,"D"],["WRATH",84,"… God's ___ and curse …",1,9,"A"],["DAILY",82,"… but doth ___ break them …",0,11,"D"]]},{"id":"x9","name":"The Lord's Prayer","from":98,"to":107,"lv":3,"R":15,"C":15,"w":[["ENCOURAGEMENT",107,"… our ___ in prayer from God only …",14,1,"A"],["CONFIDENCE",100,"… to draw near to God with all holy reverence and ___ …",5,9,"D"],["TEMPTATION",106,"… lead us not into ___ …",5,2,"D"],["ASCRIBING",107,"… ___ kingdom, power, and glory to him …",9,5,"A"],["DISCIPLES",99,"… that form of prayer which Christ taught his ___ …",5,6,"A"],["CONFESSION",98,"… with ___ of our sins …",11,5,"A"],["CHILDREN",100,"… as ___ to a father …",2,12,"D"],["DISPOSE",101,"… that he would ___ all things …",0,14,"D"],["HASTENED",102,"… the kingdom of glory may be ___",0,7,"A"],["PARDON",105,"… would freely ___ all our sins …",7,4,"A"],["ANGELS",103,"… as the ___ do in heaven",0,8,"D"],["COMPETENT",104,"… a ___ portion of the good things …",3,2,"A"],["SUBMIT",103,"… to know, obey, and ___ …",0,4,"D"],["DEBTS",105,"… forgive us our ___ …",0,0,"A"],["BREAD",104,"… Give us this day our daily ___ …",1,6,"D"],["READY",100,"… able and ___ to help us …",10,0,"A"],["DESIRES",98,"… an offering up of our ___ unto God …",0,0,"D"]]},{"id":"x10","name":"The Grand Crossword","from":1,"to":101,"lv":3,"R":15,"C":17,"w":[["ACKNOWLEDGE",46,"… to know and ___ God to be the only true God",7,4,"A"],["PREACHING",89,"… the reading, but especially the ___ of the word",0,7,"D"],["SUBSTANCE",6,"… one God, the same in ___",0,5,"D"],["SOVEREIGNTY",52,"The reasons annexed … are, God's ___ over us",0,13,"D"],["DILIGENCE",90,"… attend thereunto with ___, preparation, and prayer",2,11,"D"],["BELIEVE",3,"… what man is to ___ concerning God",10,5,"A"],["GLORIFY",1,"Man's chief end is to ___ God",4,10,"A"],["FATHER",6,"… the ___, the Son, and the Holy Ghost",5,4,"A"],["IMAGES",51,"… forbiddeth the worshipping of God by ___",3,0,"A"],["CHRIST",98,"Prayer is an offering up of our desires … in the name of ___",0,0,"D"],["SEETH",48,"… God, who ___ all things, taketh notice of …",9,6,"D"],["HALLOWED",101,"In the first petition, which is, ___ be thy name",2,2,"D"],["INFINITE",4,"God is a Spirit, ___, eternal, and unchangeable",12,0,"A"],["WISDOM",4,"… in his being, ___, power, holiness …",0,11,"A"],["ENJOY",1,"… to glorify God, and to ___ him forever",10,9,"D"],["MERCY",49,"… and shewing ___ unto thousands of them that love me",0,16,"D"],["LIVING",5,"There is but one only, the ___ and true God",9,0,"D"],["VAIN",53,"Thou shalt not take the name of the LORD thy God in ___",10,3,"D"],["JUDGMENT",56,"… will not suffer them to escape his righteous ___",12,9,"A"],["SPIRIT",4,"God is a ___, infinite, eternal, and unchangeable",7,16,"D"],["ZEAL",52,"… and the ___ he hath to his own worship",11,14,"D"]]}]/*END CROSSWORDS*/;
+if(CATID!=="wsc") GAMES.splice(GAMES.findIndex(g=>g.id==="cross"),1);
 
 /* ================= storage (per device) ================= */
 const KEY="wsc-review-v1";
@@ -626,6 +659,7 @@ const ICON = {
   build:'<rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/><rect x="8" y="3" width="8" height="8"/>',
   blitz:'<path d="M13.5 2 4 14h7l-1.5 8L19 10h-7z" fill="#11100d"/>',
   swap:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/><path d="M10.5 7.5v3.5M10.5 13.5h.01"/>',
+  cross:'<rect x="3" y="9" width="18" height="6"/><rect x="9" y="3" width="6" height="18"/><path d="M9 9h6v6H9z"/>',
   keypath:'<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h8.5a3.5 3.5 0 0 0 0-7h-9a3.5 3.5 0 0 1 0-7H16"/>',
   rain:'<path d="M7 15a4 4 0 1 1 .9-7.9A5 5 0 0 1 17.6 8 3.5 3.5 0 0 1 17 15z"/><path d="M8.5 18l-1 3M12.5 18l-1 3M16.5 18l-1 3"/>',
   first:'<path d="M3.5 19 8.5 5l5 14M5.3 14h6.4"/><path d="M15.5 19h5"/>',
@@ -982,7 +1016,7 @@ function play(id){
   app.append(G.bar,$("p",{class:"ghow"},g.how),G.stage);
   tx([G.bar, G.bar.nextSibling], "fwd", 30);
   scrollTo(0,0);
-  ({battle:Battle,typeit:TypeItOut,memtype:MemoryType,drop:WordDrop,fill:FillIn,match:MatchUp,build:BuildIt,blitz:Blitz,swap:Swap,gauntlet:Gauntlet,run:WordRun,duel:Duel,flip:FlipIt,keypath:KeyPath,rain:WordRain,first:FirstLetters,race:PaceRace})[id]();
+  ({battle:Battle,typeit:TypeItOut,memtype:MemoryType,drop:WordDrop,fill:FillIn,match:MatchUp,build:BuildIt,blitz:Blitz,swap:Swap,gauntlet:Gauntlet,run:WordRun,duel:Duel,flip:FlipIt,cross:Crossword,keypath:KeyPath,rain:WordRain,first:FirstLetters,race:PaceRace})[id]();
 }
 function pips(n){ G.pipEl=$("div",{class:"pips","aria-hidden":"true"},Array.from({length:n},()=>$("span",{class:"pip"}))); G.bar.append(G.pipEl); }
 function setPip(i,state){ const p=G.pipEl&&G.pipEl.children[i]; if(p) p.className="pip "+state; }
@@ -1852,6 +1886,100 @@ function WordRun(){
   }
   round();
 }
+
+/* ---------- Crossword (Westminster Shorter) ---------- */
+const XWLV={1:"Easy",2:"Medium",3:"Hard"}; // easy: first letters free, question shown · medium: question number shown · hard: the clue alone
+const xwStore = () => S.xw||(S.xw={}); // {x1:{g:{"r,c":"A"}, h:{word:1}, ok:{word:1}, done:bool}}
+function Crossword(){
+  G.stage.replaceChildren($("div",{class:"xlist"}, CROSSWORDS.map((z,i)=>{
+    const sv=xwStore()[z.id]||{}, n=Object.keys(sv.ok||{}).length, open=z.to<=S.max;
+    const st = !open ? "Study up to Q"+z.to+" to open" : n ? n+" of "+z.w.length+" words" : sv.done ? "Solved! Play it again" : z.w.length+" words";
+    return $("button",{class:"xpick"+(open&&sv.done&&!n?" done":""),disabled:!open,onclick:()=>xwPlay(z)},
+      $("b",{},(i+1)+". "+z.name), $("small",{},XWLV[z.lv]+" · Q"+z.from+"–"+z.to+" · "+st)); })));
+}
+function xwPlay(z){
+  const all=xwStore(), sv=all[z.id]=Object.assign({g:{},h:{},ok:{}},all[z.id]);
+  const key=(r,c)=>r+","+c, cells={}, nums={};
+  const W=z.w.map(a=>({w:a[0],q:a[1],clue:a[2],d:a[5],cells:a[0].split("").map((ch,k)=>key(a[3]+(a[5]==="D"?k:0),a[4]+(a[5]==="A"?k:0)))}));
+  W.forEach(w=>w.cells.forEach((k,i)=>{ (cells[k]=cells[k]||{ch:w.w[i],words:[]}).words.push(w); }));
+  let n=0; for(let r=0;r<z.R;r++) for(let c=0;c<z.C;c++) if(W.some(w=>w.cells[0]===key(r,c))) nums[key(r,c)]=++n;
+  W.forEach(w=>{ w.n=nums[w.cells[0]]; });
+  W.sort((a,b)=>a.d===b.d?a.n-b.n:a.d<b.d?-1:1);
+  if(z.lv===1) W.forEach(w=>{ const k=w.cells[0]; cells[k].free=true; sv.g[k]=w.w[0]; });
+  const locked=k=>cells[k].free||cells[k].words.some(w=>sv.ok[w.w]);
+  let cur=W.find(w=>!sv.ok[w.w])||W[0], pos=0, over=false;
+
+  const clueP=$("p",{"aria-live":"polite"}), grid=$("div",{class:"xgrid"});
+  Object.keys(cells).forEach(k=>{ const b=$("button",{class:"xc",tabindex:"-1",onclick:()=>tap(k)}, nums[k]?$("i",{},String(nums[k])):null, $("span",{})); cells[k].el=b; cells[k].t=b.lastChild; grid.append(b); });
+  const kb=$("div",{class:"xkeys"}, ["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"].map((row,i)=>$("div",{}, row.split("").map(ch=>$("button",{tabindex:"-1",onclick:()=>put(ch)},ch)),
+    i===2?$("button",{class:"wide",tabindex:"-1","aria-label":"Erase letter",onclick:()=>erase()},"Erase"):null)));
+  const lists=["A","D"].map(d=>$("div",{},$("h3",{},d==="A"?"Across":"Down"), W.filter(w=>w.d===d).map(w=>{
+    w.li=$("button",{onclick:()=>{ select(w); main.scrollIntoView({block:"start"}); }},$("b",{},w.n+". "),w.clue.replace("___","______")+" ("+w.w.length+")"+(z.lv<3?" Q"+w.q:"")); return w.li; })));
+  const msg=$("div",{class:"msg"},"");
+  const side=$("div",{class:"xside"},$("div",{class:"xclue"},$("button",{"aria-label":"Previous clue",onclick:()=>step(-1)},"‹"),clueP,$("button",{"aria-label":"Next clue",onclick:()=>step(1)},"›")),
+    kb, $("div",{class:"xtools"},
+      $("button",{class:"btn alt",onclick:hint},"Letter, please"),
+      $("button",{class:"btn alt",onclick:check},"Check my letters"),
+      $("button",{class:"btn alt",onclick:()=>{ stop(); Crossword(); scrollTo(0,0); }},"All puzzles")), msg);
+  const bar=side.firstChild, main=$("div",{class:"xmain"});
+  G.stage.replaceChildren(main, $("div",{class:"xclues"},lists));
+
+  function size(){ const w=G.stage.clientWidth||app.clientWidth, wide=w>=820&&innerWidth>innerHeight; // wide: grid on the left, clue and keys on the right
+    if(main.wide!==wide||!main.firstChild){ main.wide=wide; main.className="xmain"+(wide?" wide":""); if(wide){ side.insertBefore(bar,side.firstChild); main.replaceChildren(grid,side); } else main.replaceChildren(bar,grid,side); }
+    const px=Math.max(19,Math.min(wide?46:40,Math.floor((wide?w-400:w-6)/z.C),Math.floor((innerHeight-(wide?150:w<640?310:370))/z.R)));
+    grid.style.width=px*z.C+"px"; grid.style.height=px*z.R+"px";
+    Object.keys(cells).forEach(k=>{ const p=k.split(","), e=cells[k].el; e.style.left=p[1]*px+"px"; e.style.top=p[0]*px+"px"; e.style.width=e.style.height=px+"px"; e.style.fontSize=Math.round(px*.58)+"px"; e.style.lineHeight=px-2+"px";
+      if(nums[k]) e.firstChild.style.fontSize=Math.max(7,Math.round(px*.27))+"px"; }); }
+  function draw(){
+    Object.keys(cells).forEach(k=>{ const c=cells[k], ch=sv.g[k]||""; c.t.textContent=ch;
+      const on=cur.cells.indexOf(k);
+      c.el.className="xc"+(cells[k].words.some(w=>sv.ok[w.w])?" ok":cells[k].free?" free":"")+(on>=0?" word":"")+(on===pos?" cur":"")+(c.bad?" no":"");
+      c.el.setAttribute("aria-label",(nums[k]?nums[k]+", ":"")+(ch||"empty")); });
+    clueP.replaceChildren($("b",{},cur.n+(cur.d==="A"?" Across":" Down")+(z.lv<3?" · Q"+cur.q:"")), z.lv===1?$("em",{},byN(cur.q).q+" "):"", cur.clue.replace("___","______")+" ("+cur.w.length+")");
+    W.forEach(w=>{ w.li.className=sv.ok[w.w]?"ok":""; });
+  }
+  function firstGap(w){ const i=w.cells.findIndex(k=>!sv.g[k]); return i<0?0:i; }
+  function select(w,i){ cur=w; pos=i==null?firstGap(w):i; draw(); }
+  function step(d){ const left=W.filter(w=>!sv.ok[w.w]||w===cur); select(left[(left.indexOf(cur)+d+left.length)%left.length]); }
+  function tap(k){ const ws=cells[k].words; let w=ws.indexOf(cur)>=0?cur:(ws.find(x=>!sv.ok[x.w])||ws[0]);
+    if(w===cur&&cur.cells[pos]===k&&ws.length>1) w=ws.find(x=>x!==cur);
+    select(w,w.cells.indexOf(k)); }
+  function put(ch){ if(over) return; const k=cur.cells[pos];
+    if(!locked(k)){ sv.g[k]=ch; cells[k].bad=false; }
+    let i=pos+1; while(i<cur.cells.length&&locked(cur.cells[i])) i++;
+    if(i<cur.cells.length) pos=i;
+    save(); solve(); if(!over) draw(); }
+  function erase(){ if(over) return; let k=cur.cells[pos];
+    if(!sv.g[k]||locked(k)){ let i=pos-1; while(i>=0&&locked(cur.cells[i])) i--; if(i<0) return; pos=i; k=cur.cells[pos]; }
+    delete sv.g[k]; cells[k].bad=false; save(); draw(); }
+  function solve(){ // any word whose letters are now all right locks in
+    const won=W.filter(w=>!sv.ok[w.w]&&w.cells.every((k,i)=>sv.g[k]===w.w[i]));
+    won.forEach(w=>{ sv.ok[w.w]=1; if(!sv.h[w.w]) bump(w.q,true); w.cells.forEach(k=>{cells[k].bad=false;}); });
+    if(won.length){ ding(); save(); msg.className="msg ok"; msg.textContent=won[won.length-1].w+"! "+Object.keys(sv.ok).length+" of "+W.length;
+      if(W.every(w=>sv.ok[w.w])) return win();
+      if(sv.ok[cur.w]){ const from=W.indexOf(cur), nx=W.slice(from).concat(W.slice(0,from)).find(w=>!sv.ok[w.w]); cur=nx; pos=firstGap(nx); } }
+    else if(W.some(w=>w===cur&&!sv.ok[w.w]&&w.cells.every(k=>sv.g[k]))){ msg.className="msg"; msg.textContent="That word isn't right yet."; } 
+    else msg.textContent=""; }
+  function hint(){ if(over) return; let i=pos; if(sv.g[cur.cells[i]]===cur.w[i]) i=cur.cells.findIndex((k,j)=>sv.g[k]!==cur.w[j]);
+    if(i<0) return; pos=i; sv.g[cur.cells[i]]=cur.w[i]; cells[cur.cells[i]].bad=false; sv.h[cur.w]=1;
+    const nx=cur.cells.findIndex((k,j)=>j>i&&!sv.g[k]); if(nx>=0) pos=nx;
+    save(); solve(); if(!over) draw(); }
+  function check(){ let bad=0; Object.keys(cells).forEach(k=>{ const c=cells[k]; c.bad=!!sv.g[k]&&sv.g[k]!==c.ch; if(c.bad) bad++; });
+    msg.className="msg "+(bad?"no":"ok"); msg.textContent=bad?(bad===1?"1 letter to fix.":bad+" letters to fix."):"No wrong letters."; if(bad) buzz(); else ding(); draw(); }
+  function win(){ over=true; stop(); const t=W.length; G.total=t; G.right=t-Object.keys(sv.h).length;
+    G.note=z.name+": solved"+(G.right<t?", with help on "+(t-G.right):" with no help"); all[z.id]={done:true}; save(); finish();
+    scrollTo(0,0); }
+  function onKey(e){ if(e.metaKey||e.ctrlKey||e.altKey) return;
+    if(/^[a-zA-Z]$/.test(e.key)){ put(e.key.toUpperCase()); e.preventDefault(); }
+    else if(e.key==="Backspace"){ erase(); e.preventDefault(); }
+    else if(/^Arrow/.test(e.key)){ const p=cur.cells[pos].split(",").map(Number), dr=e.key==="ArrowDown"?1:e.key==="ArrowUp"?-1:0, dc=e.key==="ArrowRight"?1:e.key==="ArrowLeft"?-1:0, k=key(p[0]+dr,p[1]+dc);
+      if(cells[k]){ const ws=cells[k].words, w=ws.find(x=>x.d===(dr?"D":"A"))||ws[0]; select(w,w.cells.indexOf(k)); } e.preventDefault(); } }
+  function stop(){ document.removeEventListener("keydown",onKey); window.removeEventListener("resize",size); G&&(G.stop=null); }
+  document.addEventListener("keydown",onKey); window.addEventListener("resize",size); G.stop=stop;
+  size(); draw();
+  if(innerWidth<640) requestAnimationFrame(()=>{ if(main.isConnected!==false) scrollTo(0,main.getBoundingClientRect().top+pageYOffset-8); }); // phone: clue, grid and keys fill the screen
+}
+
 
 /* ---------- Flip It: answer → which question → which number ---------- */
 function nearby(item, k){
