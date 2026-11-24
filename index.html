@@ -817,9 +817,10 @@ function musicSkip(){ MU.idx=((S.song||0)+1)%SONGS.length; S.song=MU.idx; save()
 ["pointerdown","touchend","click","keydown"].forEach(ev=>document.addEventListener(ev,e=>{ if(e.type!=="pointerdown") acUnlock(); acWake(); musicStart(); },{capture:true,passive:true}));
 document.addEventListener("visibilitychange",()=>{ if(document.hidden) musicStop(); else musicStart(); });
 const canSpeak = "speechSynthesis" in window;
-/* recorded voice (voice/<cat>/<n>.m4a, Professor, Chatterbox); device speech is the fallback */
+/* device speech reads every line. To ship recordings again: add licensed voice/<cat>/<n>.m4a files and list the catechism in RECORDED */
+const RECORDED=[];
 const VBASE=(location.pathname.indexOf("/legacy")>=0?"../":"")+"voice/"+CATID+"/";
-const VMAP={}; WSC.forEach(i=>{ VMAP[i.q+" "+i.a]=i.n; });
+const VMAP={}; if(RECORDED.indexOf(CATID)>=0) WSC.forEach(i=>{ VMAP[i.q+" "+i.a]=i.n; });
 const VO={src:null,tok:0,buf:{}};
 function duck(on){ try{ if(MU.fv){ const t=AC.currentTime; MU.fv.gain.cancelScheduledValues(t); MU.fv.gain.setTargetAtTime(on?.2:.75,t,.12); } }catch(e){} }
 function voStop(){ VO.tok++; if(VO.src){ try{ VO.src.onended=null; VO.src.stop(0); }catch(e){} VO.src=null; duck(false); } }

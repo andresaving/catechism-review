@@ -1228,9 +1228,10 @@ document.addEventListener("visibilitychange", () => {
   else musicStart();
 });
 const canSpeak = "speechSynthesis" in window;
+const RECORDED = [];
 const VBASE = (location.pathname.indexOf("/legacy") >= 0 ? "../" : "") + "voice/" + CATID + "/";
 const VMAP = {};
-WSC.forEach((i) => {
+if (RECORDED.indexOf(CATID) >= 0) WSC.forEach((i) => {
   VMAP[i.q + " " + i.a] = i.n;
 });
 const VO = { src: null, tok: 0, buf: {} };
